@@ -160,8 +160,8 @@ const MemoCard = ({
                 添付ファイル
               </h4>
               <div className="flex flex-wrap gap-3">
-                {memo.attachments.map((file, index) => (
-                  <div key={index} className="relative">
+                {memo.attachments.map((file) => (
+                  <div key={file._id} className="relative">
                     {/* 画像ファイル */}
                     {file.type.startsWith("image/") ? (
                       <img
