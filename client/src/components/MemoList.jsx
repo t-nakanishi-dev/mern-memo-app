@@ -1,50 +1,27 @@
 // client/src/components/MemoList.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-
-// 子コンポーネントのインポート
-import MemoForm from "./MemoForm"; // 新規メモ作成フォーム
-import MemoCard from "./MemoCard"; // 各メモの表示カード
-import DeleteModal from "./DeleteModal"; // 削除確認モーダル
-import MemoSortSelect from "./MemoSortSelect"; // 並び替え選択
-import Pagination from "./Pagination"; // ページネーション
-
-// カスタムフックのインポート
-import { useMemoListLogic } from "../hooks/useMemoListLogic"; // メモ取得・状態管理
-import { useMemoActions } from "../hooks/useMemoActions"; // CRUD操作ロジック
-import { useFilteredMemos } from "../hooks/useFilteredMemos"; // 検索・フィルタ・ソート処理
+import MemoForm from "./MemoForm";
+import MemoCard from "./MemoCard";
+import DeleteModal from "./DeleteModal";
+import MemoSortSelect from "./MemoSortSelect";
+import Pagination from "./Pagination";
+import { useMemoListLogic } from "../hooks/useMemoListLogic";
+import { useMemoActions } from "../hooks/useMemoActions";
+import { useFilteredMemos } from "../hooks/useFilteredMemos";
+import { Search, Sparkles, PlusCircle, Loader2 } from "lucide-react";
 
 const MemoList = () => {
-  const navigate = useNavigate();
-
-  // 編集中メモの状態管理
-  const [editedTitle, setEditedTitle] = useState("");
-  const [editedContent, setEditedContent] = useState("");
-  const [editingMemoId, setEditingMemoId] = useState(null);
-  const [editedCategory, setEditedCategory] = useState("");
-
-  // 削除モーダル関連
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedMemoId, setSelectedMemoId] = useState(null);
-
-  // 並び替え・検索・カテゴリフィルタ
-  const [sortOrder, setSortOrder] = useState("newest"); // デフォルトは新しい順
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-
-  // ページネーション管理
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10); // 1ページあたり表示件数
-
-  // ログインユーザーのトークンを取得
   const token = localStorage.getItem("token");
 
-  // ✅ カスタムフック: メモ一覧取得とローディング管理
-  const { memos, total, error, loading, loadMemos, setError, setLoading } =
-    useMemoListLogic(token, page, limit);
+  const [sortOrder, setSortOrder] = useState("newest");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [page, setPage] = useState(1);
+  const limit = 12;
 
-  // ✅ カスタムフック: メモのCRUD操作
+  const { memos, total, loading, error, loadMemos, setLoading, setError } =
+    useMemoListLogic(token, page, limit);
   const {
     handleCreate,
     handleUpdate,
@@ -56,10 +33,8 @@ const MemoList = () => {
     loadMemos,
     setLoading,
     setError,
-    setEditingMemoId,
   });
 
-  // ✅ 検索・カテゴリフィルタ・並び替え済みのメモ一覧
   const { sortedAndFilteredMemos } = useFilteredMemos(
     memos,
     searchQuery,
@@ -67,173 +42,124 @@ const MemoList = () => {
     sortOrder
   );
 
-  // ページ切り替え処理
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= Math.ceil(total / limit)) {
-      setPage(newPage);
-    }
-  };
-
-  // 削除確認モーダルを開く
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedMemoId, setSelectedMemoId] = useState(null);
   const confirmDelete = (id) => {
     setSelectedMemoId(id);
     setShowDeleteModal(true);
   };
 
-  // モーダルで削除確定
-  const handleDeleteConfirmed = async () => {
-    if (!selectedMemoId) return;
-    await handleDelete(selectedMemoId);
-    setShowDeleteModal(false);
-    setSelectedMemoId(null);
-  };
-
-  // モーダルをキャンセル
-  const handleCancelDelete = () => {
-    setShowDeleteModal(false);
-    setSelectedMemoId(null);
-  };
-
-  // 編集開始時にフォームに値をセット
-  const startEditing = (memo) => {
-    setEditingMemoId(memo._id);
-    setEditedTitle(memo.title);
-    setEditedContent(memo.content);
-    setEditedCategory(memo.category || "");
-  };
-
-  // ログアウト処理
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("email");
-    navigate("/login");
-  };
-
   return (
-    <div className="p-4 md:p-8">
-      {/* ===== ヘッダー部分 ===== */}
-      <div className="flex justify-between items-center mb-6">
-        {/* ゴミ箱ページへ */}
-        <button
-          onClick={() => navigate("/trash")}
-          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
-        >
-          🗑 ゴミ箱
-        </button>
-
-        {/* タイトル */}
-        <h2 className="text-3xl font-extrabold text-gray-800 dark:text-gray-100 text-center flex-grow">
-          📝 メモ一覧
-        </h2>
-
-        {/* プロフィール・ログアウト（ログイン時のみ表示） */}
-        {token && (
-          <div className="flex space-x-2">
-            <button
-              onClick={() => navigate("/profile")}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-300"
-            >
-              プロフィール
-            </button>
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-300"
-            >
-              ログアウト
-            </button>
+    <div className="max-w-7xl mx-auto">
+      {/* 検索＋フィルタバー */}
+      <div className="mb-10 bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* 検索 */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="メモを検索..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
+            />
           </div>
-        )}
+
+          {/* カテゴリフィルタ */}
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="px-5 py-3.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+          >
+            <option value="">すべてのカテゴリ</option>
+            <option value="仕事">仕事</option>
+            <option value="日記">日記</option>
+            <option value="買い物">買い物</option>
+            <option value="アイデア">アイデア</option>
+            <option value="その他">その他</option>
+          </select>
+
+          {/* 並び替え */}
+          <div className="flex justify-end">
+            <MemoSortSelect sortOrder={sortOrder} setSortOrder={setSortOrder} />
+          </div>
+        </div>
       </div>
 
-      {/* 並び替えセレクト */}
-      <MemoSortSelect sortOrder={sortOrder} setSortOrder={setSortOrder} />
-
-      {/* 検索ボックス */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="タイトルまたは内容で検索"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-gray-100"
-        />
+      {/* 新規作成フォーム */}
+      <div className="mb-10">
+        <MemoForm token={token} loading={loading} onCreate={handleCreate} />
       </div>
 
-      {/* カテゴリフィルタ */}
-      <div className="mb-6">
-        <select
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-        >
-          <option value="">カテゴリで絞り込み（すべて）</option>
-          <option value="仕事">仕事</option>
-          <option value="日記">日記</option>
-          <option value="買い物">買い物</option>
-          <option value="アイデア">アイデア</option>
-          <option value="その他">その他</option>
-        </select>
-      </div>
-
-      {/* 読み込み中・エラー表示 */}
+      {/* ローディング */}
       {loading && (
-        <p className="text-blue-600 dark:text-blue-400 text-center mb-4">
-          読み込み中...
-        </p>
+        <div className="text-center py-24">
+          <Loader2 className="mx-auto h-12 w-12 text-blue-600 animate-spin" />
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
+            メモを読み込んでいます...
+          </p>
+        </div>
       )}
+
+      {/* エラー */}
       {error && (
-        <p className="text-red-500 text-center mb-4 font-medium">{`エラー: ${error}`}</p>
+        <div className="text-center py-24">
+          <p className="text-red-500 text-lg font-semibold">{error}</p>
+        </div>
       )}
 
-      {/* 新規メモ作成フォーム */}
-      <MemoForm token={token} loading={loading} onCreate={handleCreate} />
-
-      {/* メモがない場合のメッセージ */}
-      {memos.length === 0 && !loading && !error && token && (
-        <p className="text-gray-600 dark:text-gray-400 text-center text-lg mt-8">
-          メモがありません。新しいメモを作成しましょう！
-        </p>
+      {/* 空状態 */}
+      {!loading && !error && sortedAndFilteredMemos.length === 0 && (
+        <div className="text-center py-24">
+          <div className="inline-flex items-center justify-center w-28 h-28 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-full mb-8 shadow-2xl">
+            <Sparkles className="w-14 h-14 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 className="text-3xl font-bold text-gray-800 dark:text-white mb-3">
+            まだメモがありません
+          </h3>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            <PlusCircle className="inline w-5 h-5 mr-1" />
+            上のフォームから最初のメモを作成してみましょう！
+          </p>
+        </div>
       )}
 
-      {/* ===== メモ一覧の表示（フィルタ・ソート済み） ===== */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* メモグリッド（xlで4列に！） */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7">
         {sortedAndFilteredMemos.map((memo) => (
           <MemoCard
             key={memo._id}
             memo={memo}
-            editingMemoId={editingMemoId}
-            editedTitle={editedTitle}
-            editedContent={editedContent}
-            setEditedTitle={setEditedTitle}
-            setEditedContent={setEditedContent}
-            setEditingMemoId={setEditingMemoId}
-            startEditing={startEditing}
             handleUpdate={handleUpdate}
             confirmDelete={confirmDelete}
             handleToggleDone={handleToggleDone}
             handleTogglePin={handleTogglePin}
             loading={loading}
-            editedCategory={editedCategory}
-            setEditedCategory={setEditedCategory}
           />
         ))}
       </div>
 
-      {/* 削除確認モーダル */}
+      {/* ページネーション */}
+      {total > limit && (
+        <div className="mt-16">
+          <Pagination
+            page={page}
+            totalPages={Math.ceil(total / limit)}
+            onPageChange={setPage}
+          />
+        </div>
+      )}
+
+      {/* モーダル */}
       <DeleteModal
         isOpen={showDeleteModal}
-        onConfirm={handleDeleteConfirmed}
-        onCancel={handleCancelDelete}
+        onConfirm={() =>
+          handleDelete(selectedMemoId).then(() => setShowDeleteModal(false))
+        }
+        onCancel={() => setShowDeleteModal(false)}
       />
 
-      {/* ページネーション */}
-      <Pagination
-        page={page}
-        totalPages={Math.ceil(total / limit)}
-        onPageChange={handlePageChange}
-      />
-
-      {/* トースト通知 */}
       <Toaster position="top-center" />
     </div>
   );
