@@ -1,5 +1,4 @@
 // client/src/App.jsx
-
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MemoList from "./components/MemoList";
@@ -10,91 +9,121 @@ import PasswordReset from "./pages/PasswordReset";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Profile from "./components/Profile";
 import MemoDetailPage from "./pages/MemoDetailPage";
-import Layout from "./components/Layout"; // 共通レイアウト
 import TrashMemoList from "./components/TrashMemoList";
+import Layout from "./components/Layout"; // ← ここを追加！
+
+// 認証不要ページ用シンプルレイアウト
+const GuestLayout = ({ children }) => {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center items-center px-4">
+      <div className="w-full max-w-md">{children}</div>
+
+      {/* フッター（小さく） */}
+      <div className="absolute bottom-6 text-center text-xs text-gray-500 dark:text-gray-600">
+        © 2025 | Built with MERN Stack
+      </div>
+    </div>
+  );
+};
 
 const App = () => {
-  // ダークモード状態の管理
-  // 初期値は localStorage から取得。存在しなければ false（ライトモード）を設定
   const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("theme") === "dark";
-    }
-    return false;
+    return (
+      typeof window !== "undefined" && localStorage.getItem("theme") === "dark"
+    );
   });
 
-  // dark クラスの付与 / 削除と localStorage 保存
   useEffect(() => {
-    const html = window.document.documentElement;
     if (darkMode) {
-      html.classList.add("dark"); // Tailwind CSS の dark モード用クラス
+      document.documentElement.classList.add("dark");
       localStorage.setItem("theme", "dark");
     } else {
-      html.classList.remove("dark");
+      document.documentElement.classList.remove("dark");
       localStorage.setItem("theme", "light");
     }
   }, [darkMode]);
 
   return (
     <Router>
-      <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
-        {/* ダークモード切り替えボタン */}
-        <div className="p-4 text-right">
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="px-4 py-2 border rounded bg-gray-200 dark:bg-gray-700"
-          >
-            {darkMode ? "ライトモードへ" : "ダークモードへ"}
-          </button>
-        </div>
+      <div className="min-h-screen transition-colors duration-300">
+        <Routes>
+          {/* ログイン後ページ：ヘッダーあり */}
+          <Route
+            path="/*"
+            element={
+              <Layout darkMode={darkMode} setDarkMode={setDarkMode}>
+                <Routes>
+                  <Route
+                    path="/"
+                    element={
+                      <ProtectedRoute>
+                        <MemoList />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/memo/:id"
+                    element={
+                      <ProtectedRoute>
+                        <MemoDetailPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/trash"
+                    element={
+                      <ProtectedRoute>
+                        <TrashMemoList />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </Layout>
+            }
+          />
 
-        {/* 共通レイアウトでヘッダー・フッターなどをまとめる */}
-        <Layout>
-          <Routes>
-            {/* ログイン必須ルート（ProtectedRoute でガード） */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <MemoList />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/memo/:id"
-              element={
-                <ProtectedRoute>
-                  <MemoDetailPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/trash"
-              element={
-                <ProtectedRoute>
-                  <TrashMemoList />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* 認証不要ページ（ログイン前でもアクセス可能） */}
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="/password-reset-request"
-              element={<PasswordResetRequest />}
-            />
-            <Route path="/password-reset" element={<PasswordReset />} />
-          </Routes>
-        </Layout>
+          {/* ログイン・登録系：ヘッダーなし */}
+          <Route
+            path="/login"
+            element={
+              <GuestLayout darkMode={darkMode} setDarkMode={setDarkMode}>
+                <Login />
+              </GuestLayout>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <GuestLayout darkMode={darkMode} setDarkMode={setDarkMode}>
+                <Signup />
+              </GuestLayout>
+            }
+          />
+          <Route
+            path="/password-reset-request"
+            element={
+              <GuestLayout darkMode={darkMode} setDarkMode={setDarkMode}>
+                <PasswordResetRequest />
+              </GuestLayout>
+            }
+          />
+          <Route
+            path="/password-reset"
+            element={
+              <GuestLayout darkMode={darkMode} setDarkMode={setDarkMode}>
+                <PasswordReset />
+              </GuestLayout>
+            }
+          />
+        </Routes>
       </div>
     </Router>
   );
