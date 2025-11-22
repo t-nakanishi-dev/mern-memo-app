@@ -22,18 +22,13 @@ const MemoList = () => {
 
   const { memos, total, loading, error, loadMemos, setLoading, setError } =
     useMemoListLogic(token, page, limit);
-  const {
-    handleCreate,
-    handleUpdate,
-    handleDelete,
-    handleToggleDone,
-    handleTogglePin,
-  } = useMemoActions({
-    token,
-    loadMemos,
-    setLoading,
-    setError,
-  });
+  const { handleCreate, handleDelete, handleToggleDone, handleTogglePin } =
+    useMemoActions({
+      token,
+      loadMemos,
+      setLoading,
+      setError,
+    });
 
   const { sortedAndFilteredMemos } = useFilteredMemos(
     memos,
@@ -131,11 +126,9 @@ const MemoList = () => {
           <MemoCard
             key={memo._id}
             memo={memo}
-            handleUpdate={handleUpdate}
             confirmDelete={confirmDelete}
             handleToggleDone={handleToggleDone}
             handleTogglePin={handleTogglePin}
-            loading={loading}
           />
         ))}
       </div>
