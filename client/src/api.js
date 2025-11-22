@@ -96,15 +96,21 @@ export const fetchTrashedMemos = async (token, page, limit) => {
 };
 
 export const restoreMemo = async (token, id) => {
-  // ゴミ箱からメモを復元
   return apiFetch(`${API_BASE_URL}/api/memos/${id}/restore`, {
     method: "PUT",
     headers: { Authorization: `Bearer ${token}` },
   });
 };
 
+// ← ここに追加！！
+export const permanentlyDeleteMemo = async (token, id) => {
+  return apiFetch(`${API_BASE_URL}/api/memos/${id}/permanent`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
 export const emptyTrash = async (token) => {
-  // ゴミ箱を空にする（全削除）
   return apiFetch(`${API_BASE_URL}/api/memos/trash`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
