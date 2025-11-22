@@ -167,42 +167,41 @@ router.get("/:id", verifyToken, async (req, res) => {
 // =======================================
 router.put("/:id", verifyToken, async (req, res) => {
   try {
-    const { title, content, category, isDone, isPinned } = req.body;
+    // ここが最重要！！ attachments をちゃんと受け取る！！
+    const { title, content, category, isDone, isPinned, attachments } =
+      req.body;
 
-    // 更新対象のフィールドだけを抽出
     const updateFields = {};
+
     if (title !== undefined) updateFields.title = title;
     if (content !== undefined) updateFields.content = content;
     if (category !== undefined) updateFields.category = category;
     if (isDone !== undefined) updateFields.isDone = isDone;
     if (isPinned !== undefined) updateFields.isPinned = isPinned;
 
-    // 何も更新項目がなければエラー
-    if (Object.keys(updateFields).length === 0) {
-      return res
-        .status(400)
-        .json({ message: "更新内容が指定されていません。" });
+    // ここが命！！ attachments が送られてきたら完全上書き！！
+    if (attachments !== undefined) {
+      updateFields.attachments = attachments;
     }
 
-    // 該当メモを更新
+    if (Object.keys(updateFields).length === 0) {
+      return res.status(400).json({ message: "更新する内容がありません" });
+    }
+
     const updatedMemo = await Memo.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.userId },
       updateFields,
-      { new: true } // 更新後のデータを返す
+      { new: true }
     );
 
     if (!updatedMemo) {
-      return res.status(404).json({
-        message: "メモが見つかりません、または更新する権限がありません。",
-      });
+      return res.status(404).json({ message: "メモが見つかりません" });
     }
 
     res.json(updatedMemo);
   } catch (err) {
     console.error("メモ更新エラー:", err);
-    res
-      .status(500)
-      .json({ message: "メモの更新中にサーバーエラーが発生しました。" });
+    res.status(500).json({ message: "サーバーエラー" });
   }
 });
 
