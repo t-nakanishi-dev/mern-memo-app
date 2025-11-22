@@ -1,15 +1,23 @@
 // client/src/components/MemoList.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom"; // ← 追加！
 import { Toaster } from "react-hot-toast";
 import MemoForm from "./MemoForm";
 import MemoCard from "./MemoCard";
 import DeleteModal from "./DeleteModal";
 import MemoSortSelect from "./MemoSortSelect";
 import Pagination from "./Pagination";
+import { fetchTrashedMemos } from "../api"; // ← 追加！
 import { useMemoListLogic } from "../hooks/useMemoListLogic";
 import { useMemoActions } from "../hooks/useMemoActions";
 import { useFilteredMemos } from "../hooks/useFilteredMemos";
-import { Search, Sparkles, PlusCircle, Loader2 } from "lucide-react";
+import {
+  Search,
+  Sparkles,
+  PlusCircle,
+  Loader2,
+  Package, // ← ゴミ箱アイコン用
+} from "lucide-react";
 
 const MemoList = () => {
   const token = localStorage.getItem("token");
@@ -20,8 +28,12 @@ const MemoList = () => {
   const [page, setPage] = useState(1);
   const limit = 12;
 
+  // ゴミ箱の件数表示用
+  const [trashedCount, setTrashedCount] = useState(0);
+
   const { memos, total, loading, error, loadMemos, setLoading, setError } =
     useMemoListLogic(token, page, limit);
+
   const { handleCreate, handleDelete, handleToggleDone, handleTogglePin } =
     useMemoActions({
       token,
@@ -39,13 +51,58 @@ const MemoList = () => {
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMemoId, setSelectedMemoId] = useState(null);
+
   const confirmDelete = (id) => {
     setSelectedMemoId(id);
     setShowDeleteModal(true);
   };
 
+  // ゴミ箱の件数を定期的に取得（軽量）
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchTrashedCount = async () => {
+      try {
+        const res = await fetchTrashedMemos(token, 1, 1); // 1件だけ取得すれば総件数がわかる
+        if (res.ok) {
+          const data = await res.json();
+          setTrashedCount(data.total || 0);
+        }
+      } catch (err) {
+        // エラーが出ても無視（ゴミ箱が見れなくても本機能は動く）
+        console.log("ゴミ箱件数取得失敗（無視）");
+      }
+    };
+
+    fetchTrashedCount();
+    const interval = setInterval(fetchTrashedCount, 30000); // 30秒ごとに更新
+
+    return () => clearInterval(interval);
+  }, [token]);
+
   return (
     <div className="max-w-7xl mx-auto">
+      {/* ヘッダー：タイトル＋ゴミ箱ボタン */}
+      <div className="flex items-center justify-between mb-10">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+          マイメモ
+        </h1>
+
+        {/* ゴミ箱へのリンク */}
+        <Link
+          to="/trash"
+          className="group flex items-center gap-3 px-6 py-3.5 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-red-500/30 transition-all transform hover:scale-105"
+        >
+          <Package className="w-6 h-6 group-hover:animate-pulse" />
+          ゴミ箱を見る
+          {trashedCount > 0 && (
+            <span className="ml-3 px-3 py-1 bg-white text-red-600 rounded-lg text-sm font-bold animate-pulse">
+              {trashedCount}
+            </span>
+          )}
+        </Link>
+      </div>
+
       {/* 検索＋フィルタバー */}
       <div className="mb-10 bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -120,7 +177,7 @@ const MemoList = () => {
         </div>
       )}
 
-      {/* メモグリッド（xlで4列に！） */}
+      {/* メモグリッド */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7">
         {sortedAndFilteredMemos.map((memo) => (
           <MemoCard
@@ -144,7 +201,7 @@ const MemoList = () => {
         </div>
       )}
 
-      {/* モーダル */}
+      {/* 削除確認モーダル */}
       <DeleteModal
         isOpen={showDeleteModal}
         onConfirm={() =>

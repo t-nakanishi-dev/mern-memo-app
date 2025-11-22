@@ -252,4 +252,30 @@ router.put("/:id/restore", verifyToken, async (req, res) => {
   }
 });
 
+// =======================================
+// DELETE /api/memos/:id/permanent
+// ゴミ箱にあるメモを「完全に削除」（復元不可）
+// =======================================
+router.delete("/:id/permanent", verifyToken, async (req, res) => {
+  try {
+    const deletedMemo = await Memo.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user.userId,
+      isDeleted: true, // ゴミ箱にあるものだけを完全削除可能
+    });
+
+    if (!deletedMemo) {
+      return res.status(404).json({
+        message:
+          "メモが見つかりません（または既に削除済み、またはゴミ箱にありません）",
+      });
+    }
+
+    res.json({ message: "メモを完全に削除しました。" });
+  } catch (err) {
+    console.error("完全削除エラー:", err);
+    res.status(500).json({ message: "完全に削除できませんでした。" });
+  }
+});
+
 module.exports = router;
