@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom"; // ページ遷移用のフック
 import { login } from "../api"; // ログインAPI通信関数
+import Cookies from "js-cookie";
 
 const Login = () => {
   const navigate = useNavigate(); // ページ遷移を制御するためのフック
@@ -24,15 +25,16 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // ✅ ログイン成功
-        // JWTトークンとメールアドレスをローカルストレージに保存
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("email", data.email);
+        // ログイン成功時の処理（Cookie版）
+        Cookies.set("accessToken", data.token, {
+          expires: 7, // 7日間有効
+          path: "/",
+          sameSite: "lax",
+        });
+        localStorage.setItem("email", data.email); // emailだけは表示用に残す
 
-        // ホーム画面に遷移
         navigate("/");
       } else {
-        // ❌ ログイン失敗（認証エラーなど）
         setError(data.message || "ログインに失敗しました。");
       }
     } catch (err) {

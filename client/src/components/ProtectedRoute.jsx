@@ -1,33 +1,17 @@
-// client/src/components/ProtectedRoute.jsx
+// ProtectedRoute.jsx
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
+import Cookies from "js-cookie"; // ← 追加！
 
-/**
- * ProtectedRouteコンポーネント
- * -----------------------------
- * 認証が必要なルート（ページ）を保護するためのラッパー
- * 
- * props:
- * - children: 保護対象のコンポーネント
- *
- * 使用例:
- * <ProtectedRoute>
- *   <Dashboard />
- * </ProtectedRoute>
- */
 const ProtectedRoute = ({ children }) => {
-  // ローカルストレージからトークンを取得
-  const token = localStorage.getItem("token");
+  const token = Cookies.get("accessToken"); // ← ここだけ変更！
+  const location = useLocation();
 
-  // トークンが存在しない場合、ログイン画面へリダイレクト
   if (!token) {
-    // Navigateコンポーネントでリダイレクト
-    // replace={true} で履歴を置き換える（戻るボタンで戻れないようにする）
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // トークンがある場合は子コンポーネントを表示
-  return children;
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;
