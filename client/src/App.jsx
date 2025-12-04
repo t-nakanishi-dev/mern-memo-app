@@ -1,6 +1,7 @@
-// client/src/App.jsx
+// src/App.jsx
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
 import MemoList from "./components/MemoList";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
@@ -10,15 +11,13 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Profile from "./components/Profile";
 import MemoDetailPage from "./pages/MemoDetailPage";
 import TrashMemoList from "./components/TrashMemoList";
-import Layout from "./components/Layout"; // ← ここを追加！
+import Layout from "./components/Layout";
 
-// 認証不要ページ用シンプルレイアウト
+// ゲスト用シンプルレイアウト（ログイン・登録画面用）
 const GuestLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center items-center px-4">
       <div className="w-full max-w-md">{children}</div>
-
-      {/* フッター（小さく） */}
       <div className="absolute bottom-6 text-center text-xs text-gray-500 dark:text-gray-600">
         © 2025 | Built with MERN Stack
       </div>
@@ -47,54 +46,11 @@ const App = () => {
     <Router>
       <div className="min-h-screen transition-colors duration-300">
         <Routes>
-          {/* ログイン後ページ：ヘッダーあり */}
-          <Route
-            path="/*"
-            element={
-              <Layout darkMode={darkMode} setDarkMode={setDarkMode}>
-                <Routes>
-                  <Route
-                    path="/"
-                    element={
-                      <ProtectedRoute>
-                        <MemoList />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <Profile />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/memo/:id"
-                    element={
-                      <ProtectedRoute>
-                        <MemoDetailPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/trash"
-                    element={
-                      <ProtectedRoute>
-                        <TrashMemoList />
-                      </ProtectedRoute>
-                    }
-                  />
-                </Routes>
-              </Layout>
-            }
-          />
-
-          {/* ログイン・登録系：ヘッダーなし */}
+          {/* 認証不要ページ */}
           <Route
             path="/login"
             element={
-              <GuestLayout darkMode={darkMode} setDarkMode={setDarkMode}>
+              <GuestLayout>
                 <Login />
               </GuestLayout>
             }
@@ -102,7 +58,7 @@ const App = () => {
           <Route
             path="/signup"
             element={
-              <GuestLayout darkMode={darkMode} setDarkMode={setDarkMode}>
+              <GuestLayout>
                 <Signup />
               </GuestLayout>
             }
@@ -110,7 +66,7 @@ const App = () => {
           <Route
             path="/password-reset-request"
             element={
-              <GuestLayout darkMode={darkMode} setDarkMode={setDarkMode}>
+              <GuestLayout>
                 <PasswordResetRequest />
               </GuestLayout>
             }
@@ -118,9 +74,26 @@ const App = () => {
           <Route
             path="/password-reset"
             element={
-              <GuestLayout darkMode={darkMode} setDarkMode={setDarkMode}>
+              <GuestLayout>
                 <PasswordReset />
               </GuestLayout>
+            }
+          />
+
+          {/* 認証必要ページ：一括でProtectedRoute + Layoutで囲む */}
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <Layout darkMode={darkMode} setDarkMode={setDarkMode}>
+                  <Routes>
+                    <Route path="/" element={<MemoList />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/memo/:id" element={<MemoDetailPage />} />
+                    <Route path="/trash" element={<TrashMemoList />} />
+                  </Routes>
+                </Layout>
+              </ProtectedRoute>
             }
           />
         </Routes>
