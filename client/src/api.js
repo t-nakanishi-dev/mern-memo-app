@@ -37,10 +37,9 @@ export const login = async (email, password) => {
 // -----------------------------
 // メモ関連
 // -----------------------------
-export const fetchMemos = async (token, page = 1, limit = 10) => {
-  // メモ一覧の取得（ページネーション付き）
+export const fetchMemos = async (page = 1, limit = 10) => {
   return apiFetch(`${API_BASE_URL}/api/memos?page=${page}&limit=${limit}`, {
-    headers: { Authorization: `Bearer ${token}` }, // 認証トークン付与
+    credentials: "include",
   });
 };
 
