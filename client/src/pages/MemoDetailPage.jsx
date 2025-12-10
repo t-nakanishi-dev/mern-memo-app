@@ -17,20 +17,15 @@ const MemoDetailPage = () => {
   // エラーメッセージを保持
   const [error, setError] = useState(null);
 
-  // ローカルストレージからログイン済みユーザーのトークンを取得
-  const token = localStorage.getItem("token");
+
 
   // コンポーネントがマウントされたとき or id/token が変化したときに実行
   useEffect(() => {
     const getMemo = async () => {
-      // トークンがなければログイン画面へリダイレクト
-      if (!token) {
-        navigate("/login");
-        return;
-      }
+
       try {
         // APIからメモを取得（token と id を渡す）
-        const res = await fetchMemo(token, id);
+        const res = await fetchMemo(id);
 
         // レスポンスがエラーなら例外を投げる
         if (!res.ok) {
@@ -48,7 +43,7 @@ const MemoDetailPage = () => {
     };
 
     getMemo();
-  }, [id, navigate, token]);
+  }, [id, navigate]);
 
   // エラーがある場合の表示
   if (error) {
