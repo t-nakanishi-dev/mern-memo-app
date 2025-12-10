@@ -38,39 +38,65 @@ router.post("/signup", async (req, res) => {
 });
 
 // -------------------------------
-// ユーザーログイン
-// POST /api/login
+// ユーザーログイン ← ここに診断ログ追加！！
 // -------------------------------
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 入力されたメールアドレスのユーザーを探す
+    console.log("【診断A】/api/login にリクエスト到達");
+    console.log("【診断B】受信データ:", { email, password: "***" });
+
     const user = await User.findOne({ email });
     if (!user) {
+      console.log("【診断C】ユーザーが見つからない");
       return res
         .status(400)
         .json({ message: "メールアドレスかパスワードが間違っています。" });
     }
 
-    // 入力パスワードとDB内のハッシュ化されたパスワードを比較
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log("【診断D】パスワード不一致");
       return res
         .status(400)
         .json({ message: "メールアドレスかパスワードが間違っています。" });
     }
 
-    // JWTトークンを発行（7日間有効）
-    const token = jwt.sign(
-      { userId: user._id, email: user.email }, // ペイロード
-      process.env.JWT_SECRET, // 秘密鍵（.envに設定）
-      { expiresIn: "7d" } // 有効期限
+    console.log("【診断E】認証成功！トークン生成開始");
+
+    const accessToken = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "30m" }
     );
 
-    res.json({ token, message: "ログイン成功" });
+    console.log(
+      "【診断F】トークン生成完了（先頭50文字）:",
+      accessToken.substring(0, 50) + "..."
+    );
+
+    // ここが超重要！！
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: false, // ローカルはfalseでOK
+      sameSite: "lax",
+      maxAge: 30 * 60 * 1000,
+      path: "/",
+    });
+
+    console.log(
+      "【診断G】res.cookie() 実行完了 ← これが出たらクッキーセット済み"
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "ログイン成功",
+      message: "ログイン成功",
+      email: user.email,
+    });
   } catch (err) {
-    console.error("ログインエラー:", err);
+    console.error("【診断ERROR】ログイン処理で例外発生:", err);
     res.status(500).json({ message: "サーバーエラーが発生しました。" });
   }
 });

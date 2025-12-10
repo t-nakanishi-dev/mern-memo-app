@@ -1,6 +1,4 @@
 // client/src/components/MemoDetail.jsx
-// 最終完成版：2025年11月22日 永遠の神バージョン（画像キャッシュ問題完全殲滅）
-
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -17,6 +15,7 @@ import {
   Upload,
 } from "lucide-react";
 
+import { apiFetch } from "../apiFetch"; // ← これ必須！
 import { uploadFile } from "../hooks/utils/uploadFile";
 
 const MemoDetail = () => {
@@ -35,9 +34,6 @@ const MemoDetail = () => {
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("token");
-
-  // キャッシュバスター生成関数（これが最強の武器！）
   const cacheBuster = () => Date.now();
 
   useEffect(() => {
@@ -46,9 +42,9 @@ const MemoDetail = () => {
 
   const fetchMemo = async () => {
     try {
-      const res = await fetch(`/api/memos/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`/api/memos/${id}`);
+      if (!res) return;
+
       const data = await res.json();
       if (res.ok) {
         setMemo(data);
@@ -58,7 +54,7 @@ const MemoDetail = () => {
         setExistingAttachments(data.attachments || []);
       } else {
         toast.error("メモの取得に失敗しました");
-        navigate("/");
+
       }
     } catch (err) {
       toast.error("通信エラー");
@@ -99,11 +95,7 @@ const MemoDetail = () => {
           ? await Promise.all(
               currentFiles.map(async (file) => {
                 const url = await uploadFile(file, "memos");
-                return {
-                  url,
-                  name: file.name,
-                  type: file.type,
-                };
+                return { url, name: file.name, type: file.type };
               })
             )
           : [];
@@ -118,12 +110,8 @@ const MemoDetail = () => {
         ...newAttachments,
       ];
 
-      const res = await fetch(`/api/memos/${id}`, {
+      const res = await apiFetch(`/api/memos/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({
           title: editedTitle,
           content: editedContent,
@@ -131,6 +119,8 @@ const MemoDetail = () => {
           attachments: finalAttachments,
         }),
       });
+
+      if (!res) return;
 
       if (res.ok) {
         const updated = await res.json();
@@ -142,11 +132,10 @@ const MemoDetail = () => {
         toast.success("メモを更新しました！");
       } else {
         const error = await res.json();
-        toast.error(error.message || "更新に失敗しました");
+        toast.error(error.message || "更新に失敗");
       }
     } catch (err) {
-      console.error("更新エラー:", err);
-      toast.error("更新中にエラーが発生しました");
+      toast.error("更新中にエラーが発生");
     } finally {
       setUploading(false);
     }
@@ -154,33 +143,22 @@ const MemoDetail = () => {
 
   const handleDelete = async () => {
     if (!window.confirm("本当に削除しますか？")) return;
-    try {
-      await fetch(`/api/memos/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const res = await apiFetch(`/api/memos/${id}`, { method: "DELETE" });
+    if (res && res.ok) {
       toast.success("メモを削除しました");
-      navigate("/");
-    } catch (err) {
-      toast.error("削除に失敗しました");
+    } else {
+      toast.error("削除に失敗");
     }
   };
 
   const togglePin = async () => {
-    try {
-      const res = await fetch(`/api/memos/${id}/pin`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setMemo(updated);
-        toast.success(
-          updated.isPinned ? "ピン留めしました" : "ピン留めを解除しました"
-        );
-      }
-    } catch (err) {
-      toast.error("操作に失敗しました");
+    const res = await apiFetch(`/api/memos/${id}/pin`, { method: "PATCH" });
+    if (res && res.ok) {
+      const updated = await res.json();
+      setMemo(updated);
+      toast.success(
+        updated.isPinned ? "ピン留めしました" : "ピン留めを解除しました"
+      );
     }
   };
 
@@ -260,7 +238,7 @@ const MemoDetail = () => {
                 <option value="その他">その他</option>
               </select>
 
-              {/* 既存ファイル（編集モード） */}
+              {/* 既存ファイル */}
               {existingAttachments.length > 0 && (
                 <div className="space-y-3">
                   <h4 className="text-lg font-semibold">

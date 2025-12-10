@@ -20,8 +20,6 @@ import {
 } from "lucide-react";
 
 const MemoList = () => {
-  const token = localStorage.getItem("token");
-
   const [sortOrder, setSortOrder] = useState("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
@@ -32,11 +30,10 @@ const MemoList = () => {
   const [trashedCount, setTrashedCount] = useState(0);
 
   const { memos, total, loading, error, loadMemos, setLoading, setError } =
-    useMemoListLogic(token, page, limit);
+    useMemoListLogic(page, limit);
 
   const { handleCreate, handleDelete, handleToggleDone, handleTogglePin } =
     useMemoActions({
-      token,
       loadMemos,
       setLoading,
       setError,
@@ -59,11 +56,9 @@ const MemoList = () => {
 
   // ゴミ箱の件数を定期的に取得（軽量）
   useEffect(() => {
-    if (!token) return;
-
     const fetchTrashedCount = async () => {
       try {
-        const res = await fetchTrashedMemos(token, 1, 1); // 1件だけ取得すれば総件数がわかる
+        const res = await fetchTrashedMemos(1, 1); // 1件だけ取得すれば総件数がわかる
         if (res.ok) {
           const data = await res.json();
           setTrashedCount(data.total || 0);
@@ -78,7 +73,7 @@ const MemoList = () => {
     const interval = setInterval(fetchTrashedCount, 30000); // 30秒ごとに更新
 
     return () => clearInterval(interval);
-  }, [token]);
+  });
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -141,7 +136,7 @@ const MemoList = () => {
 
       {/* 新規作成フォーム */}
       <div className="mb-10">
-        <MemoForm token={token} loading={loading} onCreate={handleCreate} />
+        <MemoForm loading={loading} onCreate={handleCreate} />
       </div>
 
       {/* ローディング */}

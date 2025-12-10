@@ -1,36 +1,29 @@
-// server/middleware/verifyToken.js
+// server/middleware/verifyToken.js（← これに完全置き換え）
 
-const jwt = require("jsonwebtoken"); // JWT (JSON Web Token) を扱うライブラリを読み込む
+const jwt = require("jsonwebtoken");
 
-// JWTトークンを検証するミドルウェア
 const verifyToken = (req, res, next) => {
-  // リクエストヘッダーの "Authorization" を取得
-  // 形式は "Bearer <TOKEN>" が想定される
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // "Bearer TOKEN" から TOKEN 部分のみ抽出
+  console.log("\n=== 【診断START】verifyToken ミドルウェア実行 ===");
+  console.log("【診断1】リクエストURL:", req.method, req.originalUrl);
+  console.log("【診断2】req.cookies の全内容:", req.cookies);
+  console.log("【診断3】accessToken 存在？ →", !!req.cookies?.accessToken);
+
+  const token = req.cookies?.accessToken;
 
   if (!token) {
-    // トークンが存在しない場合は 401 Unauthorized を返す
-    return res.status(401).json({ message: "認証トークンがありません。" });
+    console.log("【診断4】トークンなし → 401返します");
+    return res.status(401).json({ message: "認証トークンが必要です" });
   }
 
   try {
-    // JWTトークンの検証
-    const secretKey = process.env.JWT_SECRET; // .env に設定したシークレットキーを使用
-    const decoded = jwt.verify(token, secretKey); // トークンが有効かどうかを確認
-
-    // 検証が成功した場合、トークン内のペイロード情報を req.user に格納
-    // これにより、次のルートハンドラでユーザー情報を利用可能
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("【診断5】トークン検証成功！ユーザーID:", decoded.userId);
     req.user = decoded;
-
-    console.log("Decoded JWT payload:", decoded); // デバッグ用にデコード結果を出力
-
-    next(); // 次のミドルウェアまたはルートハンドラへ処理を渡す
+    next();
   } catch (err) {
-    // トークンが無効または期限切れの場合は 403 Forbidden を返す
-    return res.status(403).json({ message: "無効なトークンです。" });
+    console.log("【診断6】トークン検証失敗:", err.message);
+    return res.status(401).json({ message: "無効なトークンです" });
   }
 };
 
-// モジュールとしてエクスポート
 module.exports = verifyToken;

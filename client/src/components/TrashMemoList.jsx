@@ -20,19 +20,13 @@ const TrashMemoList = () => {
   const limit = 12;
   const [total, setTotal] = useState(0);
 
-  const token = localStorage.getItem("token");
-
   const loadTrashedMemos = async (pageToLoad = page) => {
-    if (!token) {
-      navigate("/login");
-      return;
-    }
 
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetchTrashedMemos(token, pageToLoad, limit);
+      const res = await fetchTrashedMemos(pageToLoad, limit);
       if (!res.ok) throw new Error("ゴミ箱のメモを取得できませんでした");
 
       const data = await res.json();
@@ -54,7 +48,7 @@ const TrashMemoList = () => {
   // 復元
   const handleRestore = async (id) => {
     try {
-      const res = await restoreMemo(token, id);
+      const res = await restoreMemo(id);
       if (!res.ok) throw new Error("復元に失敗しました");
       toast.success("メモを復元しました！");
       loadTrashedMemos();
@@ -71,7 +65,7 @@ const TrashMemoList = () => {
       return;
 
     try {
-      const res = await permanentlyDeleteMemo(token, id);
+      const res = await permanentlyDeleteMemo(id);
       if (!res.ok) throw new Error("削除に失敗しました");
       toast.success("完全に削除しました");
       loadTrashedMemos();
@@ -90,7 +84,7 @@ const TrashMemoList = () => {
       return;
 
     try {
-      const res = await emptyTrash(token);
+      const res = await emptyTrash();
       if (!res.ok) throw new Error("ゴミ箱を空にできませんでした");
       toast.success("ゴミ箱を空にしました");
       setMemos([]);

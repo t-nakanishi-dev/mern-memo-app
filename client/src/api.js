@@ -17,7 +17,8 @@ export const signup = async (email, password) => {
   const res = await fetch(`${API_BASE_URL}/api/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }), // 入力データをJSON化
+    body: JSON.stringify({ email, password }),
+    credentials: "include", // ← 追加！！
   });
   return res;
 };
@@ -28,6 +29,7 @@ export const login = async (email, password) => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
+    credentials: "include", // ← 追加！！
   });
   return res;
 };

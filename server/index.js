@@ -2,56 +2,44 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const path = require("path"); // Node.js標準モジュール: ファイルパスを扱うためのユーティリティ
-const memoRoutes = require("./routes/memos"); // メモ関連のルーティングモジュール
-const authRoutes = require("./routes/auth"); // 認証関連のルーティングモジュール
-const userRoutes = require("./routes/users"); // ユーザー関連のルーティングモジュール
-require("dotenv").config(); // 環境変数を .env ファイルから読み込む
+const path = require("path");
+const memoRoutes = require("./routes/memos");
+const authRoutes = require("./routes/auth");
+const userRoutes = require("./routes/users");
+const cookieParser = require("cookie-parser");
+require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000; // 環境変数 PORT があれば優先し、なければデフォルトで3000番を利用
+const PORT = process.env.PORT || 3000;
 
-// ==========================
-// MongoDBへの接続処理
-// ==========================
+// MongoDB接続
 mongoose
-  .connect(process.env.MONGODB_URI) // .env に定義された MongoDB の接続URIを使用
-  .then(() => console.log("✅ MongoDB Connected")) // 接続成功
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err)); // 接続失敗
+  .connect(process.env.MONGODB_URI)
+  .then(() => console.log("MongoDB Connected"))
+  .catch((err) => console.error("MongoDB Connection Error:", err));
 
-// ==========================
-// ミドルウェアの設定
-// ==========================
-app.use(cors()); // CORS（クロスオリジンリソースシェアリング）を許可
-app.use(express.json()); // JSON形式のリクエストボディを自動でパースするミドルウェア
+// ミドルウェア（ここが重要！）
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "http://localhost:3001"], // 両方許可！
+    credentials: true,
+  })
+);
+app.use(cookieParser()); // ← クッキー読み取り
+app.use(express.json());
 
-// ==========================
-// APIルーティングの設定
-// ==========================
-app.use("/api/memos", memoRoutes); // /api/memos/... → メモ関連の処理
-app.use("/api/users", userRoutes); // /api/users/... → ユーザープロフィール関連の処理
-app.use("/api", authRoutes); // /api/... → 認証関連の処理（例: /api/login, /api/register）
+// ルーティング
+app.use("/api/memos", memoRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api", authRoutes);
 
-// ==========================
-// Reactアプリのビルドファイルを配信
-// ==========================
-// Expressで client/build 内の静的ファイルを提供する。
-// これにより、本番環境でバックエンドとフロントエンドを同一サーバーで動かせる。
+// 静的ファイル配信（本番用）
 app.use(express.static(path.join(__dirname, "../client/build")));
-
-// ==========================
-// SPA（シングルページアプリケーション）用フォールバックルート
-// ==========================
-// - /api で始まらないすべての GET リクエストに対して index.html を返却
-// - React Router のクライアントサイドルーティングが機能するようにする
-// - この処理は API ルートより後に置く必要がある
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/build", "index.html"));
 });
 
-// ==========================
 // サーバー起動
-// ==========================
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

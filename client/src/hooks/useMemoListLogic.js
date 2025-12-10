@@ -29,10 +29,6 @@ export const useMemoListLogic = (token, page, limit) => {
    */
   const loadMemos = useCallback(async () => {
     // トークンがない場合はログイン画面へ
-    if (!token) {
-      navigate("/login");
-      return;
-    }
 
     setLoading(true); // ローディング開始
     setError(null); // エラーリセット
@@ -40,13 +36,6 @@ export const useMemoListLogic = (token, page, limit) => {
     try {
       // API からメモを取得
       const response = await fetchMemos(token, page, limit);
-
-      // 認証エラーの場合にログイン画面へ遷移（コメントアウト済み）
-      // if (response.status === 401 || response.status === 403) {
-      //   localStorage.removeItem("token");
-      //   navigate("/login");
-      //   throw new Error("認証エラー: 再度ログインしてください。");
-      // }
 
       // それ以外の HTTP エラー処理
       if (!response.ok) {
