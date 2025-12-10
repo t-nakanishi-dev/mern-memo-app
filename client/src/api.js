@@ -1,41 +1,31 @@
 // client/src/api.js
 import { apiFetch } from "./apiFetch";
-// .envファイルに REACT_APP_API_URL=http://localhost:3000 と設定している前提
-// 各エンドポイントのベースURLとして利用する
-// 例: `${API_BASE_URL}/api/memos`
-const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-// 各API関数は「fetch」または「apiFetch」を利用して
-// HTTPレスポンスオブジェクト(Response)をそのまま返す設計。
-// 呼び出し元のコンポーネントで `res.ok` や `res.status` を直接確認できる。
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 // -----------------------------
 // ユーザー認証関連
 // -----------------------------
 export const signup = async (email, password) => {
-  // 新規ユーザー登録
-  const res = await fetch(`${API_BASE_URL}/api/signup`, {
+  return fetch(`${API_BASE_URL}/api/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
-    credentials: "include", // ← 追加！！
+    credentials: "include",
   });
-  return res;
 };
 
 export const login = async (email, password) => {
-  // ログイン処理
-  const res = await fetch(`${API_BASE_URL}/api/login`, {
+  return fetch(`${API_BASE_URL}/api/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
-    credentials: "include", // ← 追加！！
+    credentials: "include",
   });
-  return res;
 };
 
 // -----------------------------
-// メモ関連
+// メモ関連（すべて Cookie 認証）
 // -----------------------------
 export const fetchMemos = async (page = 1, limit = 10) => {
   return apiFetch(`${API_BASE_URL}/api/memos?page=${page}&limit=${limit}`, {
@@ -43,86 +33,70 @@ export const fetchMemos = async (page = 1, limit = 10) => {
   });
 };
 
-export const createMemo = async (token, memo) => {
-  // 新規メモ作成
+export const createMemo = async (memo) => {
   return apiFetch(`${API_BASE_URL}/api/memos`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(memo), // メモ内容を送信
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(memo),
+    credentials: "include",
   });
 };
 
-export const updateMemo = async (token, id, updatedData) => {
-  // メモの更新（id指定）
+export const updateMemo = async (id, updatedData) => {
   return apiFetch(`${API_BASE_URL}/api/memos/${id}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updatedData),
+    credentials: "include",
   });
 };
 
-export const deleteMemo = async (token, id) => {
-  // メモ削除（id指定）
+export const deleteMemo = async (id) => {
   return apiFetch(`${API_BASE_URL}/api/memos/${id}`, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
   });
 };
 
-export const fetchMemo = async (token, id) => {
-  // 特定のメモ詳細を取得
+export const fetchMemo = async (id) => {
   return apiFetch(`${API_BASE_URL}/api/memos/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
   });
 };
 
-export const fetchTrashedMemos = async (token, page, limit) => {
-  // ゴミ箱に入っているメモの一覧を取得
+export const fetchTrashedMemos = async (page, limit) => {
   return apiFetch(
     `${API_BASE_URL}/api/memos/trash?page=${page}&limit=${limit}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
+    { credentials: "include" }
   );
 };
 
-export const restoreMemo = async (token, id) => {
+export const restoreMemo = async (id) => {
   return apiFetch(`${API_BASE_URL}/api/memos/${id}/restore`, {
     method: "PUT",
-    headers: { Authorization: `Bearer ${token}` },
+    credentials: "include",
   });
 };
 
-// ← ここに追加！！
-export const permanentlyDeleteMemo = async (token, id) => {
+export const permanentlyDeleteMemo = async (id) => {
   return apiFetch(`${API_BASE_URL}/api/memos/${id}/permanent`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
+    credentials: "include",
   });
 };
 
-export const emptyTrash = async (token) => {
+export const emptyTrash = async () => {
   return apiFetch(`${API_BASE_URL}/api/memos/trash`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
+    credentials: "include",
   });
 };
 
 // -----------------------------
 // パスワードリセット関連
+// （これは認証不要なので現状のままでOK）
 // -----------------------------
 export const passwordResetRequest = async (email) => {
-  // リセットリンク送信リクエスト
   return fetch(`${API_BASE_URL}/api/password-reset-request`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -131,7 +105,6 @@ export const passwordResetRequest = async (email) => {
 };
 
 export const passwordReset = async (token, newPassword) => {
-  // リセットリンク経由で新しいパスワードを設定
   return fetch(`${API_BASE_URL}/api/password-reset`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
