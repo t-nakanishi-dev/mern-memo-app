@@ -6,7 +6,7 @@ import { fetchMemos } from "../api";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
-export const useMemoListLogic = (token, page, limit) => {
+export const useMemoListLogic = (page, limit) => {
   // 🔹 メモ一覧のデータを保持
   const [memos, setMemos] = useState([]);
 
@@ -35,7 +35,7 @@ export const useMemoListLogic = (token, page, limit) => {
 
     try {
       // API からメモを取得
-      const response = await fetchMemos(token, page, limit);
+      const response = await fetchMemos(page, limit);
 
       // それ以外の HTTP エラー処理
       if (!response.ok) {
@@ -54,7 +54,7 @@ export const useMemoListLogic = (token, page, limit) => {
     } finally {
       setLoading(false); // ローディング終了
     }
-  }, [token, navigate, page, limit]);
+  }, [navigate, page, limit]);
 
   /**
    * 🔸 初回レンダリング時および依存値（ページ・トークンなど）が変わった時にメモを取得
