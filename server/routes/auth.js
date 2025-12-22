@@ -92,7 +92,6 @@ router.post("/login", async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "ログイン成功",
-      message: "ログイン成功",
       email: user.email,
     });
   } catch (err) {
@@ -136,7 +135,7 @@ router.post("/password-reset-request", async (req, res) => {
     });
 
     // パスワードリセット用のURLを生成（フロントエンド側でクエリパラメータとして利用）
-    const resetLink = `http://localhost:3000/password-reset?token=${token}`;
+    const resetLink = `${process.env.FRONTEND_URL}/password-reset?token=${token}`;
 
     // ユーザーにメールを送信
     await transporter.sendMail({

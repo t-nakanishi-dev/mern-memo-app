@@ -10,7 +10,7 @@ const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // MongoDB接続
 mongoose
@@ -21,7 +21,7 @@ mongoose
 // ミドルウェア（ここが重要！）
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"], // 両方許可！
+    origin: ["http://localhost:3000"], 
     credentials: true,
   })
 );
