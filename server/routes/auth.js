@@ -68,7 +68,7 @@ router.post("/login", async (req, res) => {
     const accessToken = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: "30m" }
+      { expiresIn: "7d" }
     );
 
     console.log(
@@ -79,9 +79,9 @@ router.post("/login", async (req, res) => {
     // ここが超重要！！
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: false, // ローカルはfalseでOK
+      secure: process.env.NODE_ENV === "production", // 本番はtrue、ローカルはfalseでもOK
       sameSite: "lax",
-      maxAge: 30 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7日間（ミリ秒）
       path: "/",
     });
 
