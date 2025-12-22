@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 import { uploadFile } from "../hooks/utils/uploadFile";
 import { Plus, X, Image, FileText, Loader2, Send } from "lucide-react";
 
-const MemoForm = ({ token, loading, onCreate }) => {
+const MemoForm = ({ loading, onCreate }) => {
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [newCategory, setNewCategory] = useState("");
@@ -49,7 +49,6 @@ const MemoForm = ({ token, loading, onCreate }) => {
   };
 
   const handleSubmit = async () => {
-    if (!token) return toast.error("ログインが必要です");
     if (!newTitle.trim()) return toast.error("タイトルを入力してください");
     if (!newContent.trim()) return toast.error("内容を入力してください");
     if (!newCategory) return toast.error("カテゴリを選択してください");
@@ -85,7 +84,7 @@ const MemoForm = ({ token, loading, onCreate }) => {
     }
   };
 
-  const isDisabled = !token || loading || uploading;
+  const isDisabled = loading || uploading;
 
   return (
     <div className="bg-white dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
