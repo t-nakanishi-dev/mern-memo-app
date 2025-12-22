@@ -3,6 +3,8 @@ client/node_modules/
 server/node_modules/
 
 .env
+.env.development
+.env.production
 .env.local
 
 MEMO.md

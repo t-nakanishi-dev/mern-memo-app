@@ -27,7 +27,7 @@ export const login = async (email, password) => {
 // -----------------------------
 // メモ関連（すべて Cookie 認証）
 // -----------------------------
-export const fetchMemos = async (page = 1, limit = 10) => {
+export const fetchMemos = async (page = 1, limit = 12) => {
   return apiFetch(`${API_BASE_URL}/api/memos?page=${page}&limit=${limit}`, {
     credentials: "include",
   });

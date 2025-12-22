@@ -6,12 +6,12 @@ const Memo = require("../models/Memo"); // Memoモデルをインポート
 const router = express.Router();
 
 // =======================================
-// GET /api/memos?page=1&limit=10
+// GET /api/memos?page=1&limit=12
 // メモ一覧を取得（削除されていないもののみ）
 // =======================================
 router.get("/", verifyToken, async (req, res) => {
   const page = parseInt(req.query.page) || 1; // ページ番号（デフォルト1）
-  const limit = parseInt(req.query.limit) || 10; // 1ページあたり件数（デフォルト10）
+  const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 12;
 
   try {
     // 認証済みユーザーのメモを検索（削除されていないもの）
@@ -92,7 +92,8 @@ router.post("/", verifyToken, async (req, res) => {
 // =======================================
 router.get("/trash", verifyToken, async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 12;
+
 
   try {
     const trashedMemos = await Memo.find({
