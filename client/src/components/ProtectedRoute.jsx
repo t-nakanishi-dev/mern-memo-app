@@ -1,7 +1,7 @@
 // client/src/components/ProtectedRoute.jsx
 import React, { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { apiFetch } from "../apiFetch"; // ← これが命！
+import { apiFetch } from "../apiFetch";
 
 const ProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(null); // null = 判定中
@@ -10,11 +10,16 @@ const ProtectedRoute = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // 超軽量な認証確認エンドポイントを叩く（おすすめ）
-        const res = await apiFetch("/api/auth/check"); // ← 後で作る（1行でOK）
-        
-        // apiFetch が401返したら自動で/loginに飛ぶので、ここには来ない
-        setIsAuthenticated(res?.ok || false);
+        // 軽量認証チェックエンドポイント
+        const res = await apiFetch("/api/auth/check");
+
+        // res が null の場合は apiFetch により自動ログアウト済み
+        if (!res) {
+          setIsAuthenticated(false);
+          return;
+        }
+
+        setIsAuthenticated(res.ok);
       } catch (err) {
         setIsAuthenticated(false);
       }
@@ -23,7 +28,7 @@ const ProtectedRoute = ({ children }) => {
     checkAuth();
   }, []);
 
-  // まだ判定中
+  // 判定中のローディング表示
   if (isAuthenticated === null) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -32,12 +37,12 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // 認証されてなかったらログイン画面へ
+  // 認証NG → ログインへ
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // 認証OK！
+  // 認証OK
   return <>{children}</>;
 };
 

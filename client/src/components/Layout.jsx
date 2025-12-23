@@ -1,15 +1,25 @@
 // src/components/Layout.jsx
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
 
 const Layout = ({ children, darkMode, setDarkMode }) => {
   const navigate = useNavigate();
   const userEmail = localStorage.getItem("email") || "ユーザー";
 
-  const handleLogout = () => {
-    Cookies.remove("accessToken", { path: "/" }); // ← これに変更
+  const handleLogout = async () => {
+    try {
+      // サーバー側で access / refresh を両方削除
+      await fetch(`${process.env.REACT_APP_API_URL}/api/logout`, {
+        method: "POST",
+        credentials: "include", // ← Cookie を送るため必須
+      });
+    } catch (error) {
+      console.error("ログアウトエラー:", error);
+    }
+
+    // クライアント側のデータも削除
     localStorage.removeItem("email");
+
     navigate("/login");
   };
 
