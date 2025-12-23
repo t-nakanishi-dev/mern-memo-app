@@ -1,32 +1,48 @@
 // server/routes/auth.js
 
 const express = require("express");
-const crypto = require("crypto"); // ランダムなトークン生成に使用
-const User = require("../models/User"); // Userモデルをインポート
-const bcrypt = require("bcrypt"); // パスワード照合に使用
-const jwt = require("jsonwebtoken"); // JWT生成・検証に使用
-const nodemailer = require("nodemailer"); // メール送信ライブラリ
+const crypto = require("crypto");
+const User = require("../models/User");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const verifyToken = require("../middleware/verifyToken");
 
-const router = express.Router(); // Expressのルーターを作成
+const router = express.Router();
 
-// -------------------------------
-// ユーザー新規登録（サインアップ）
-// POST /api/signup
-// -------------------------------
+// ---------------------------------------------------------
+// ユーティリティ：AccessToken & RefreshToken 生成関数
+// ---------------------------------------------------------
+const generateAccessToken = (user) => {
+  return jwt.sign(
+    { userId: user._id, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: "15m" } // 15分
+  );
+};
+
+const generateRefreshToken = (user) => {
+  return jwt.sign(
+    { userId: user._id },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: "14d" } // 14日
+  );
+};
+
+// ---------------------------------------------------------
+// サインアップ
+// ---------------------------------------------------------
 router.post("/signup", async (req, res) => {
   try {
-    const { email, password } = req.body; // リクエストボディからメール・パスワード取得
+    const { email, password } = req.body;
 
-    // すでに同じメールアドレスで登録されているかチェック
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    const existing = await User.findOne({ email });
+    if (existing) {
       return res
         .status(400)
         .json({ message: "すでに登録済みのメールアドレスです。" });
     }
 
-    // 新しいユーザーを作成
-    // パスワードはUserモデルのpre("save")フックで自動的にハッシュ化される
     const newUser = new User({ email, password });
     await newUser.save();
 
@@ -37,15 +53,14 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-// -------------------------------
-// ユーザーログイン ← ここに診断ログ追加！！
-// -------------------------------
+// ---------------------------------------------------------
+// ログイン（Refresh Token対応）
+// ---------------------------------------------------------
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     console.log("【診断A】/api/login にリクエスト到達");
-    console.log("【診断B】受信データ:", { email, password: "***" });
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -63,68 +78,140 @@ router.post("/login", async (req, res) => {
         .json({ message: "メールアドレスかパスワードが間違っています。" });
     }
 
-    console.log("【診断E】認証成功！トークン生成開始");
+    console.log("【診断E】認証成功 → トークン生成");
 
-    const accessToken = jwt.sign(
-      { userId: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
 
-    console.log(
-      "【診断F】トークン生成完了（先頭50文字）:",
-      accessToken.substring(0, 50) + "..."
-    );
+    // DB に refreshToken 保存
+    user.refreshToken = refreshToken;
+    await user.save();
 
-    // ここが超重要！！
+    // Cookie に保存（httpOnly）
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // 本番はtrue、ローカルはfalseでもOK
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7日間（ミリ秒）
+      maxAge: 15 * 60 * 1000, // 15分
       path: "/",
     });
 
-    console.log(
-      "【診断G】res.cookie() 実行完了 ← これが出たらクッキーセット済み"
-    );
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 14 * 24 * 60 * 60 * 1000, // 14日
+      path: "/auth/refresh",
+    });
 
-    return res.status(200).json({
+    console.log("【診断G】Cookie セット完了");
+
+    return res.json({
       success: true,
       message: "ログイン成功",
       email: user.email,
     });
   } catch (err) {
-    console.error("【診断ERROR】ログイン処理で例外発生:", err);
+    console.error("ログインエラー:", err);
     res.status(500).json({ message: "サーバーエラーが発生しました。" });
   }
 });
 
-// -------------------------------
-// パスワードリセット要求
-// POST /api/password-reset-request
-// メールアドレスを受け取り、リセット用のURLを送信
-// -------------------------------
+// ---------------------------------------------------------
+// Refresh Token エンドポイント
+// ---------------------------------------------------------
+router.post("/refresh", async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) return res.status(401).json({ message: "未認証です。" });
+
+    // DB から refreshToken を持つユーザーを探す
+    const user = await User.findOne({ refreshToken });
+    if (!user)
+      return res
+        .status(401)
+        .json({ message: "無効なリフレッシュトークンです。" });
+
+    // Refresh Token の検証
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    // 新しいアクセストークン発行
+    const newAccessToken = generateAccessToken(user);
+
+    // ついでに refreshToken も更新（トークンローテーション）
+    const newRefreshToken = generateRefreshToken(user);
+    user.refreshToken = newRefreshToken;
+    await user.save();
+
+    // Cookie 更新
+    res.cookie("accessToken", newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 15 * 60 * 1000,
+      path: "/",
+    });
+
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 14 * 24 * 60 * 60 * 1000,
+      path: "/auth/refresh",
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Refresh エラー:", err);
+    return res.status(401).json({ message: "再ログインが必要です。" });
+  }
+});
+
+// ---------------------------------------------------------
+// ログアウト（Refresh Token 削除）
+// ---------------------------------------------------------
+router.post("/logout", async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (refreshToken) {
+      const user = await User.findOne({ refreshToken });
+      if (user) {
+        user.refreshToken = "";
+        await user.save();
+      }
+    }
+
+    // Cookie を削除
+    res.clearCookie("accessToken", { path: "/" });
+    res.clearCookie("refreshToken", { path: "/auth/refresh" });
+
+    return res.json({ message: "ログアウトしました。" });
+  } catch (err) {
+    console.error("ログアウトエラー:", err);
+    res.status(500).json({ message: "サーバーエラーが発生しました。" });
+  }
+});
+
+// ---------------------------------------------------------
+// パスワードリセット（既存機能）
+// ---------------------------------------------------------
 router.post("/password-reset-request", async (req, res) => {
   const { email } = req.body;
 
   try {
-    // メールアドレスに対応するユーザーを検索
     const user = await User.findOne({ email });
     if (!user) {
-      // セキュリティのため「存在しない」場合でも成功レスポンスを返す
       return res.status(200).json({
         message: "（存在する場合）パスワードリセットメールを送信しました。",
       });
     }
 
-    // ランダムなリセットトークンを生成
     const token = crypto.randomBytes(32).toString("hex");
     user.resetToken = token;
-    user.resetTokenExpires = Date.now() + 1000 * 60 * 60; // 1時間有効
+    user.resetTokenExpires = Date.now() + 1000 * 60 * 60;
     await user.save();
 
-    // Nodemailerの送信設定（Mailtrapを利用した開発環境用例）
     const transporter = nodemailer.createTransport({
       host: "sandbox.smtp.mailtrap.io",
       port: 2525,
@@ -134,10 +221,8 @@ router.post("/password-reset-request", async (req, res) => {
       },
     });
 
-    // パスワードリセット用のURLを生成（フロントエンド側でクエリパラメータとして利用）
     const resetLink = `${process.env.FRONTEND_URL}/password-reset?token=${token}`;
 
-    // ユーザーにメールを送信
     await transporter.sendMail({
       from: '"Your App" <no-reply@yourapp.com>',
       to: user.email,
@@ -156,19 +241,16 @@ router.post("/password-reset-request", async (req, res) => {
   }
 });
 
-// -------------------------------
-// パスワードリセット処理
-// POST /api/password-reset
-// トークンと新しいパスワードを受け取り、DBを更新
-// -------------------------------
+// ---------------------------------------------------------
+// パスワードリセット
+// ---------------------------------------------------------
 router.post("/password-reset", async (req, res) => {
-  const { token, newPassword } = req.body; // リクエストからトークンと新パスワードを取得
+  const { token, newPassword } = req.body;
 
   try {
-    // 有効なトークンを持つユーザーを検索
     const user = await User.findOne({
       resetToken: token,
-      resetTokenExpires: { $gt: Date.now() }, // 現在時刻より有効期限が未来
+      resetTokenExpires: { $gt: Date.now() },
     });
 
     if (!user) {
@@ -178,14 +260,10 @@ router.post("/password-reset", async (req, res) => {
       });
     }
 
-    // 新しいパスワードを設定（ハッシュ化はUserモデルのpre("save")で自動実行される）
     user.password = newPassword;
-
-    // 使用済みのトークン情報を削除
     user.resetToken = undefined;
     user.resetTokenExpires = undefined;
 
-    // 保存 → pre("save")でパスワードがハッシュ化される
     await user.save();
 
     res.json({ message: "パスワードが正常にリセットされました。" });
@@ -193,6 +271,13 @@ router.post("/password-reset", async (req, res) => {
     console.error("パスワードリセットエラー:", err);
     res.status(500).json({ message: "サーバーエラーが発生しました。" });
   }
+});
+
+// ---------------------------------------------------------
+// AccessToken のみ検証
+// ---------------------------------------------------------
+router.get("/check", verifyToken, (req, res) => {
+  return res.json({ authenticated: true });
 });
 
 module.exports = router;
