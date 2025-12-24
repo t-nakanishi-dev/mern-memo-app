@@ -54,7 +54,7 @@ const MemoCard = ({
         <h3 className="text-xl font-bold mb-3">
           <Link
             to={`/memo/${memo._id}`}
-            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2 group"
+            className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2 group"
           >
             <span className={isDone ? "line-through opacity-70" : ""}>
               {memo.title || "無題のメモ"}
