@@ -2,39 +2,40 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const path = require("path");
 const memoRoutes = require("./routes/memos");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const cookieParser = require("cookie-parser");
+require("dotenv").config(); // まず .env（共通）を読み込む
 
 // ============================================
 // dotenv 設定
 // ============================================
 
-require("dotenv").config(); // 共通の .env を読み込む
+// 1. まず共通の .env を読み込む（あれば）
+require("dotenv").config(); // → .env（共通変数）
 
+// 2. 開発時は強制的に .env.development を上書き読み込み
+//    → npm run dev で起動している限り、常にこれが優先される！
 if (process.env.NODE_ENV !== "production") {
-  // 開発時
   require("dotenv").config({
     path: ".env.development",
-    override: true,
+    override: true, // 同じ変数があっても上書き
   });
 } else {
-  // 本番時
+  // 本番時は .env.production を読み込む（デプロイ時に使う）
   require("dotenv").config({
     path: ".env.production",
     override: true,
   });
 }
 
-// デバッグログ（開発時のみ）
+// デバッグログ（開発時のみ表示）
 if (process.env.NODE_ENV !== "production") {
   console.log("🧑‍💻 現在の環境変数（開発モード）:");
   console.log("NODE_ENV:", process.env.NODE_ENV);
-  console.log(
-    "FRONTEND_URL:",
-    process.env.FRONTEND_URL || "未設定（デフォルト: localhost:3000）"
-  );
+  console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
   console.log("MONGODB_URI:", process.env.MONGODB_URI ? "設定済み" : "未設定");
 }
 
@@ -47,52 +48,28 @@ mongoose
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.error("MongoDB Connection Error:", err));
 
-// ============================================
-// CORS 設定（これが最重要！）
-// ============================================
-
-const allowedOrigins = [
-  "http://localhost:3000", // 開発用
-  process.env.FRONTEND_URL, // 本番クライアントURL（Renderで設定）
-  // 必要に応じて追加（例: "https://another-client.example.com"）
-].filter(Boolean); // undefinedや空文字列を除外
-
+// ミドルウェア（ここが重要！）
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // origin が undefined の場合（同じoriginからのリクエストやPostmanなど）は許可
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.error(`CORSブロック: 不正なorigin → ${origin}`);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true, // CookieやAuthorizationヘッダーを許可
-    optionsSuccessStatus: 200, // レガシーブラウザ対応
+    origin: ["http://localhost:3000"],
+    credentials: true,
   })
 );
-
-// ============================================
-// その他のミドルウェア
-// ============================================
-
-app.use(cookieParser());
+app.use(cookieParser()); // ← クッキー読み取り
 app.use(express.json());
 
-// ============================================
-// API ルーティング
-// ============================================
-
+// ルーティング
 app.use("/api/memos", memoRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api", authRoutes); // /api/login, /api/register など
+app.use("/api", authRoutes);
 
-// ============================================
+// 静的ファイル配信（本番用）
+app.use(express.static(path.join(__dirname, "../client/build")));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/build", "index.html"));
+});
+
 // サーバー起動
-// ============================================
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 });
