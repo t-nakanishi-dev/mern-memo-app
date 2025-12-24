@@ -17,44 +17,18 @@ const generateAccessToken = (user) => {
   return jwt.sign(
     { userId: user._id, email: user.email },
     process.env.JWT_SECRET,
-    { expiresIn: "15m" } // 15分
+    { expiresIn: "15m" }
   );
 };
 
 const generateRefreshToken = (user) => {
-  return jwt.sign(
-    { userId: user._id },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: "14d" } // 14日
-  );
+  return jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: "14d",
+  });
 };
 
 // ---------------------------------------------------------
-// サインアップ
-// ---------------------------------------------------------
-router.post("/signup", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const existing = await User.findOne({ email });
-    if (existing) {
-      return res
-        .status(400)
-        .json({ message: "すでに登録済みのメールアドレスです。" });
-    }
-
-    const newUser = new User({ email, password });
-    await newUser.save();
-
-    res.status(201).json({ message: "ユーザー登録が完了しました。" });
-  } catch (err) {
-    console.error("サインアップエラー:", err);
-    res.status(500).json({ message: "サーバーエラーが発生しました。" });
-  }
-});
-
-// ---------------------------------------------------------
-// ログイン（Refresh Token対応）
+// ログイン（修正版）
 // ---------------------------------------------------------
 router.post("/login", async (req, res) => {
   try {
@@ -63,22 +37,11 @@ router.post("/login", async (req, res) => {
     console.log("【診断A】/api/login にリクエスト到達");
 
     const user = await User.findOne({ email });
-    if (!user) {
-      console.log("【診断C】ユーザーが見つからない");
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res
         .status(400)
         .json({ message: "メールアドレスかパスワードが間違っています。" });
     }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      console.log("【診断D】パスワード不一致");
-      return res
-        .status(400)
-        .json({ message: "メールアドレスかパスワードが間違っています。" });
-    }
-
-    console.log("【診断E】認証成功 → トークン生成");
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
@@ -87,28 +50,27 @@ router.post("/login", async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save();
 
-    // Cookie に保存（httpOnly）
-    res.cookie("accessToken", accessToken, {
+    // 【重要】refreshToken のみ httpOnly Cookie に保存
+    // accessToken はボディで返す（クライアントがヘッダーに付与するため）
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 15 * 60 * 1000, // 15分
+      secure: process.env.NODE_ENV === "production", // 本番はHTTPSのみ
+      sameSite: "none", // ★これが超重要！クロスサイト許可
+      maxAge: 14 * 24 * 60 * 60 * 1000,
       path: "/",
     });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 14 * 24 * 60 * 60 * 1000, // 14日
-      path: "/auth/refresh",
-    });
+    // accessToken のCookieは完全に削除（不要）
+    res.clearCookie("accessToken");
 
-    console.log("【診断G】Cookie セット完了");
+    console.log(
+      "【診断G】ログイン成功 → accessTokenをボディ返却、refreshTokenをCookie設定"
+    );
 
     return res.json({
       success: true,
       message: "ログイン成功",
+      accessToken, // ← クライアントがこれを使ってAuthorizationヘッダー設定
       email: user.email,
     });
   } catch (err) {
@@ -118,50 +80,48 @@ router.post("/login", async (req, res) => {
 });
 
 // ---------------------------------------------------------
-// Refresh Token エンドポイント
+// Refresh Token エンドポイント（修正版）
 // ---------------------------------------------------------
 router.post("/refresh", async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
 
-    if (!refreshToken) return res.status(401).json({ message: "未認証です。" });
-
-    // DB から refreshToken を持つユーザーを探す
-    const user = await User.findOne({ refreshToken });
-    if (!user)
+    if (!refreshToken) {
       return res
         .status(401)
-        .json({ message: "無効なリフレッシュトークンです。" });
+        .json({ message: "リフレッシュトークンがありません" });
+    }
 
-    // Refresh Token の検証
+    const user = await User.findOne({ refreshToken });
+    if (!user) {
+      return res
+        .status(401)
+        .json({ message: "無効なリフレッシュトークンです" });
+    }
+
+    // JWT検証
     jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
-    // 新しいアクセストークン発行
     const newAccessToken = generateAccessToken(user);
+    const newRefreshToken = generateRefreshToken(user); // ローテーション
 
-    // ついでに refreshToken も更新（トークンローテーション）
-    const newRefreshToken = generateRefreshToken(user);
     user.refreshToken = newRefreshToken;
     await user.save();
 
-    // Cookie 更新
-    res.cookie("accessToken", newAccessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 15 * 60 * 1000,
-      path: "/",
-    });
-
+    // refreshToken を更新（sameSite: "none" + secure必須）
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "none", // ★クロスサイト対応
       maxAge: 14 * 24 * 60 * 60 * 1000,
-      path: "/auth/refresh",
+      path: "/",
     });
 
-    return res.json({ success: true });
+    // accessToken はボディで返す
+    return res.json({
+      success: true,
+      accessToken: newAccessToken,
+    });
   } catch (err) {
     console.error("Refresh エラー:", err);
     return res.status(401).json({ message: "再ログインが必要です。" });
@@ -169,22 +129,21 @@ router.post("/refresh", async (req, res) => {
 });
 
 // ---------------------------------------------------------
-// ログアウト（Refresh Token 削除）
+// ログアウト
 // ---------------------------------------------------------
 router.post("/logout", async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
     if (refreshToken) {
-      const user = await User.findOne({ refreshToken });
-      if (user) {
-        user.refreshToken = "";
-        await user.save();
-      }
+      await User.updateOne({ refreshToken }, { $unset: { refreshToken: "" } });
     }
 
-    // Cookie を削除
-    res.clearCookie("accessToken", { path: "/" });
-    res.clearCookie("refreshToken", { path: "/auth/refresh" });
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+      path: "/",
+    });
 
     return res.json({ message: "ログアウトしました。" });
   } catch (err) {
