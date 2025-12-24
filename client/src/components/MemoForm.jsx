@@ -120,7 +120,7 @@ const MemoForm = ({ loading, onCreate }) => {
             value={newCategory}
             onChange={(e) => setNewCategory(e.target.value)}
             disabled={isDisabled}
-            className="flex-1 px-5 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+            className="flex-1 px-5 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-700 dark:text-gray-300"
           >
             <option value="">カテゴリを選択</option>
             <option value="仕事">仕事</option>

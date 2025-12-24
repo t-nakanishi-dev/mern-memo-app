@@ -44,9 +44,12 @@ const Layout = ({ children, darkMode, setDarkMode }) => {
                 {darkMode ? "Light Mode" : "Dark Mode"}
               </button>
 
-              <span className="text-gray-700 dark:text-gray-300 mx-4">
+              <Link
+                to="/profile"
+                className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition"
+              >
                 {userEmail}
-              </span>
+              </Link>
 
               <button
                 onClick={handleLogout}

@@ -54,7 +54,6 @@ const MemoDetail = () => {
         setExistingAttachments(data.attachments || []);
       } else {
         toast.error("メモの取得に失敗しました");
-
       }
     } catch (err) {
       toast.error("通信エラー");
