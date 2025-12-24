@@ -39,7 +39,7 @@ const Layout = ({ children, darkMode, setDarkMode }) => {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                className="p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               >
                 {darkMode ? "Light Mode" : "Dark Mode"}
               </button>

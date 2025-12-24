@@ -117,7 +117,7 @@ const MemoList = () => {
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-5 py-3.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+            className="px-5 py-3.5 bg-gray-50 dark:bg-gray-700 border text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
           >
             <option value="">すべてのカテゴリ</option>
             <option value="仕事">仕事</option>
