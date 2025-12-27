@@ -1,7 +1,4 @@
 // client/src/apiFetch.js
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
-
 let isRefreshing = false;
 let refreshWaitQueue = [];
 
@@ -18,7 +15,7 @@ const refreshAccessToken = async () => {
   try {
     console.log("🔄 Refresh Token を使用してアクセストークン再取得中…");
 
-    const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+    const res = await fetch("/api/auth/refresh", {
       method: "POST",
       credentials: "include",
     });
