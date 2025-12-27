@@ -87,21 +87,21 @@ router.post("/login", async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save();
 
-    // Cookie に保存（httpOnly）
+    // Cookie 設定（login / refresh 共通）
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 15 * 60 * 1000, // 15分
-      path: "/",
+      sameSite: "none", // ← 本番クロスサイト用
+      maxAge: 15 * 60 * 1000,
+      path: "/", // ← 全てのパスで有効
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 14 * 24 * 60 * 60 * 1000, // 14日
-      path: "/auth/refresh",
+      sameSite: "none", // ← 本番クロスサイト用
+      maxAge: 14 * 24 * 60 * 60 * 1000,
+      path: "/", // ← 全てのパスで有効
     });
 
     console.log("【診断G】Cookie セット完了");
