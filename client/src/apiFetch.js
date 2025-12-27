@@ -3,6 +3,7 @@ let isRefreshing = false;
 let refreshWaitQueue = [];
 
 // refreshToken によるアクセストークン再取得
+// refreshAccessToken（本番対応）
 const refreshAccessToken = async () => {
   if (isRefreshing) {
     return new Promise((resolve) => {
@@ -15,24 +16,27 @@ const refreshAccessToken = async () => {
   try {
     console.log("🔄 Refresh Token を使用してアクセストークン再取得中…");
 
-    const res = await fetch("/api/auth/refresh", {
+    // 👇 本番でも正しく動作する絶対パス
+    const refreshUrl = `${process.env.REACT_APP_API_URL}/api/auth/refresh`;
+
+    const res = await fetch(refreshUrl, {
       method: "POST",
       credentials: "include",
     });
 
     if (!res.ok) {
-      console.error("❌ Refresh Token が無効");
+      console.error("❌ Refresh Token が無効:", res.status);
+      window.location.href = "/login"; // 👈 即ログインフォールバック
       return null;
     }
 
-    console.log("✅ Refresh Token → 新しい accessToken 再発行に成功！");
-
+    console.log("✅ Refresh Token → 新しい accessToken 再発行成功！");
     refreshWaitQueue.forEach((resolve) => resolve(true));
     refreshWaitQueue = [];
-
     return true;
   } catch (err) {
     console.error("❌ refreshAccessToken エラー:", err);
+    window.location.href = "/login";
     return null;
   } finally {
     isRefreshing = false;

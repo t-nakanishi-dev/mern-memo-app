@@ -13,6 +13,9 @@ require("dotenv").config(); // 基本の .env
 // dotenv 設定
 // ============================================
 
+console.log("🔍 【JWT診断】JWT_SECRET:", process.env.JWT_SECRET ? "設定済み (長さ: " + process.env.JWT_SECRET.length + ")" : "❌ 未設定 or undefined");
+console.log("🔍 【JWT診断】REFRESH_TOKEN_SECRET:", process.env.REFRESH_TOKEN_SECRET ? "設定済み (長さ: " + process.env.REFRESH_TOKEN_SECRET.length + ")" : "❌ 未設定 or undefined");
+
 // 1. 共通の .env を読み込む
 require("dotenv").config();
 
@@ -55,8 +58,9 @@ mongoose
 app.use(
   cors({
     origin: [
-      "http://localhost:3000", // 開発用
-      process.env.FRONTEND_URL, // 本番URL (.env.productionで設定)
+      "http://localhost:3000",
+      process.env.FRONTEND_URL, // 👈 https://mern-memo-app-client.onrender.com
+      "https://mern-memo-app-client-v2.onrender.com", // 👈 明示的に追加
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
