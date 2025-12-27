@@ -1,12 +1,13 @@
 // client/src/apiFetch.js
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 let isRefreshing = false;
 let refreshWaitQueue = [];
 
 // refreshToken によるアクセストークン再取得
 const refreshAccessToken = async () => {
   if (isRefreshing) {
-    // すでにリフレッシュ中なら待機
     return new Promise((resolve) => {
       refreshWaitQueue.push(resolve);
     });
@@ -17,7 +18,7 @@ const refreshAccessToken = async () => {
   try {
     console.log("🔄 Refresh Token を使用してアクセストークン再取得中…");
 
-    const res = await fetch("/api/auth/refresh", {
+    const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
       method: "POST",
       credentials: "include",
     });
@@ -29,7 +30,6 @@ const refreshAccessToken = async () => {
 
     console.log("✅ Refresh Token → 新しい accessToken 再発行に成功！");
 
-    // 待機中のリクエストを再開
     refreshWaitQueue.forEach((resolve) => resolve(true));
     refreshWaitQueue = [];
 
@@ -43,7 +43,7 @@ const refreshAccessToken = async () => {
 };
 
 // ------------------------------------------------------------
-// ⭐ apiFetch：すべての fetch をラップ（自動で refresh）
+// apiFetch：すべての fetch をラップ（自動で refresh）
 // ------------------------------------------------------------
 export const apiFetch = async (url, options = {}) => {
   const doRequest = async () => {
@@ -59,7 +59,6 @@ export const apiFetch = async (url, options = {}) => {
 
   let res = await doRequest();
 
-  // アクセストークンが無効 → refresh → 再リクエスト
   if (res.status === 401) {
     console.warn("⚠️ 401 を検知 → Refresh Token で復旧を試みます");
 
@@ -73,7 +72,6 @@ export const apiFetch = async (url, options = {}) => {
 
     console.log("♻️ Refresh 成功 → 元のリクエストを再実行します");
 
-    // 元のリクエストを再度実行
     res = await doRequest();
   }
 
