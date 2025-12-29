@@ -112,7 +112,7 @@ const MemoForm = ({ loading, onCreate }) => {
           onChange={(e) => setNewContent(e.target.value)}
           disabled={isDisabled}
           rows={6}
-          className="w-full bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-xl px-5 py-4 text-base resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-gray-500 dark:placeholder-gray-400"
+          className="w-full bg-gray-50 dark:bg-gray-700/50 border text-gray-800 dark:text-white border-gray-300 dark:border-gray-600 rounded-xl px-5 py-4 text-base resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-gray-500 dark:placeholder-gray-400"
         />
 
         <div className="flex flex-col sm:flex-row gap-4">

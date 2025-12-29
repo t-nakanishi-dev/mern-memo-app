@@ -1,9 +1,11 @@
 // client/src/apiFetch.js
+
 let isRefreshing = false;
 let refreshWaitQueue = [];
 
-// refreshToken によるアクセストークン再取得
-// refreshAccessToken（本番対応）
+// REACT_APP_API_URL が未定義の場合のフォールバック（ローカル用）
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
 const refreshAccessToken = async () => {
   if (isRefreshing) {
     return new Promise((resolve) => {
@@ -14,10 +16,10 @@ const refreshAccessToken = async () => {
   isRefreshing = true;
 
   try {
-    console.log("🔄 Refresh Token を使用してアクセストークン再取得中…");
+    console.log("🔄 Refresh Token で再取得中…");
 
-    // 👇 本番でも正しく動作する絶対パス
-    const refreshUrl = `${process.env.REACT_APP_API_URL}/api/auth/refresh`;
+    // 正しいパスに修正（/api/refresh）
+    const refreshUrl = `${API_BASE_URL}/api/refresh`;
 
     const res = await fetch(refreshUrl, {
       method: "POST",
@@ -25,17 +27,17 @@ const refreshAccessToken = async () => {
     });
 
     if (!res.ok) {
-      console.error("❌ Refresh Token が無効:", res.status);
-      window.location.href = "/login"; // 👈 即ログインフォールバック
+      console.error("❌ Refresh失敗:", res.status);
+      window.location.href = "/login";
       return null;
     }
 
-    console.log("✅ Refresh Token → 新しい accessToken 再発行成功！");
+    console.log("✅ Refresh成功！");
     refreshWaitQueue.forEach((resolve) => resolve(true));
     refreshWaitQueue = [];
     return true;
   } catch (err) {
-    console.error("❌ refreshAccessToken エラー:", err);
+    console.error("❌ Refreshエラー:", err);
     window.location.href = "/login";
     return null;
   } finally {
@@ -44,9 +46,14 @@ const refreshAccessToken = async () => {
 };
 
 // ------------------------------------------------------------
-// apiFetch：すべての fetch をラップ（自動で refresh）
+// apiFetch：相対パスを自動で絶対パスに変換
 // ------------------------------------------------------------
-export const apiFetch = async (url, options = {}) => {
+export const apiFetch = async (endpoint, options = {}) => {
+  // endpointが http で始まる場合はそのまま、さもなくば絶対パスに変換
+  const url = endpoint.startsWith("http")
+    ? endpoint
+    : `${API_BASE_URL}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
+
   const doRequest = async () => {
     return await fetch(url, {
       ...options,
@@ -60,19 +67,19 @@ export const apiFetch = async (url, options = {}) => {
 
   let res = await doRequest();
 
+  // 401ならrefresh試行
   if (res.status === 401) {
-    console.warn("⚠️ 401 を検知 → Refresh Token で復旧を試みます");
+    console.warn("⚠️ 401検知 → Refresh試行");
 
     const refreshed = await refreshAccessToken();
 
     if (!refreshed) {
-      console.warn("❌ refresh に失敗 → ログアウト処理へ");
+      console.warn("❌ Refresh失敗 → ログイン画面へ");
       window.location.href = "/login";
       return null;
     }
 
-    console.log("♻️ Refresh 成功 → 元のリクエストを再実行します");
-
+    // 再実行
     res = await doRequest();
   }
 

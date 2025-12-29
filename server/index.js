@@ -13,8 +13,18 @@ require("dotenv").config(); // 基本の .env
 // dotenv 設定
 // ============================================
 
-console.log("🔍 【JWT診断】JWT_SECRET:", process.env.JWT_SECRET ? "設定済み (長さ: " + process.env.JWT_SECRET.length + ")" : "❌ 未設定 or undefined");
-console.log("🔍 【JWT診断】REFRESH_TOKEN_SECRET:", process.env.REFRESH_TOKEN_SECRET ? "設定済み (長さ: " + process.env.REFRESH_TOKEN_SECRET.length + ")" : "❌ 未設定 or undefined");
+console.log(
+  "🔍 【JWT診断】JWT_SECRET:",
+  process.env.JWT_SECRET
+    ? "設定済み (長さ: " + process.env.JWT_SECRET.length + ")"
+    : "❌ 未設定 or undefined"
+);
+console.log(
+  "🔍 【JWT診断】REFRESH_TOKEN_SECRET:",
+  process.env.REFRESH_TOKEN_SECRET
+    ? "設定済み (長さ: " + process.env.REFRESH_TOKEN_SECRET.length + ")"
+    : "❌ 未設定 or undefined"
+);
 
 // 1. 共通の .env を読み込む
 require("dotenv").config();
@@ -85,13 +95,16 @@ app.use("/api/users", userRoutes);
 app.use("/api", authRoutes);
 
 // ============================================
-// 本番の静的ファイル配信（client/build）
+// 本番の静的ファイル配信 → 開発環境のみ適用
 // ============================================
-app.use(express.static(path.join(__dirname, "../client/build")));
+if (process.env.NODE_ENV !== "production") {
+  // ローカルのみ：クライアントのビルドファイルを配信（Vite/ReactのSPA対応）
+  app.use(express.static(path.join(__dirname, "../client/build")));
 
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/build", "index.html"));
-});
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../client/build", "index.html"));
+  });
+}
 
 // ============================================
 // サーバー起動
