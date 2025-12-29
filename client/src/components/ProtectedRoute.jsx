@@ -11,7 +11,7 @@ const ProtectedRoute = ({ children }) => {
     const checkAuth = async () => {
       try {
         // 軽量認証チェックエンドポイント
-        const res = await apiFetch("/api/auth/check");
+        const res = await apiFetch("/api/check");
 
         // res が null の場合は apiFetch により自動ログアウト済み
         if (!res) {
