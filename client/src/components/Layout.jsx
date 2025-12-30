@@ -37,11 +37,8 @@ const Layout = ({ children, darkMode, setDarkMode }) => {
             </Link>
 
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-              >
-                {darkMode ? "Light Mode" : "Dark Mode"}
+              <button onClick={() => setDarkMode(!darkMode)} className="p-2">
+                {darkMode ? "☀️" : "🌙"}
               </button>
 
               <Link
@@ -53,9 +50,9 @@ const Layout = ({ children, darkMode, setDarkMode }) => {
 
               <button
                 onClick={handleLogout}
-                className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg transition"
+                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm"
               >
-                ログアウト
+                退出
               </button>
             </div>
           </div>
