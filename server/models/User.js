@@ -20,10 +20,10 @@ const UserSchema = new mongoose.Schema(
     resetToken: String,
     resetTokenExpires: Date,
 
-    // 🔑 Refresh Token を DB に保存（任意）
+    // 🔑 Refresh Token を DB に保存
     refreshToken: {
       type: String,
-      default: "", // 既存ユーザーに配慮
+      default: "", 
     },
   },
   { timestamps: true }

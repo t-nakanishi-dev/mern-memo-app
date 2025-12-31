@@ -76,12 +76,8 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    console.log("【診断A】/api/login にリクエスト到達");
-
     const user = await User.findOne({ email });
     if (!user) {
-      console.log("【診断C】ユーザーが見つからない");
       return res
         .status(400)
         .json({ message: "メールアドレスかパスワードが間違っています。" });
@@ -89,7 +85,6 @@ router.post("/login", async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.log("【診断D】パスワード不一致");
       return res
         .status(400)
         .json({ message: "メールアドレスかパスワードが間違っています。" });
@@ -103,8 +98,6 @@ router.post("/login", async (req, res) => {
           message: "ユーザーID取得エラー。管理者にお問い合わせください。",
         });
     }
-
-    console.log("【診断E】認証成功 → トークン生成 → user._id:", user._id);
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
@@ -132,7 +125,6 @@ router.post("/login", async (req, res) => {
     );
 
     console.log(
-      "【診断G】Cookie セット完了 → accessToken 長さ:",
       accessToken.length
     );
 

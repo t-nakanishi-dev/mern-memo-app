@@ -9,7 +9,7 @@ import {
 } from "../api";
 import { toast, Toaster } from "react-hot-toast";
 import { ArrowLeft, Trash2, RotateCcw, Package, Loader2 } from "lucide-react";
-import MemoCard from "./MemoCard"; // ← 同じMemoCardを再利用！超統一感！
+import MemoCard from "./MemoCard";
 
 const TrashMemoList = () => {
   const navigate = useNavigate();

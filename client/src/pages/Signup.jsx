@@ -21,7 +21,6 @@ const Signup = () => {
       const data = await response.json();
 
       if (response.ok) {
-        console.log("Signup successful:", data);
         // サインアップ成功したらログイン画面へ
         navigate("/login");
       } else {

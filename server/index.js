@@ -7,24 +7,11 @@ const memoRoutes = require("./routes/memos");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const cookieParser = require("cookie-parser");
-require("dotenv").config(); // 基本の .env
+require("dotenv").config(); 
 
 // ============================================
 // dotenv 設定
 // ============================================
-
-console.log(
-  "🔍 【JWT診断】JWT_SECRET:",
-  process.env.JWT_SECRET
-    ? "設定済み (長さ: " + process.env.JWT_SECRET.length + ")"
-    : "❌ 未設定 or undefined"
-);
-console.log(
-  "🔍 【JWT診断】REFRESH_TOKEN_SECRET:",
-  process.env.REFRESH_TOKEN_SECRET
-    ? "設定済み (長さ: " + process.env.REFRESH_TOKEN_SECRET.length + ")"
-    : "❌ 未設定 or undefined"
-);
 
 // 1. 共通の .env を読み込む
 require("dotenv").config();
@@ -43,14 +30,6 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// デバッグログ（開発時のみ）
-if (process.env.NODE_ENV !== "production") {
-  console.log("🧑‍💻 現在の環境変数（開発モード）:");
-  console.log("NODE_ENV:", process.env.NODE_ENV);
-  console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
-  console.log("MONGODB_URI:", process.env.MONGODB_URI ? "設定済み" : "未設定");
-}
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -63,14 +42,14 @@ mongoose
   .catch((err) => console.error("MongoDB Connection Error:", err));
 
 // ============================================
-// ⭐ CORS（最重要：ここが原因だった）
+// ⭐ CORS
 // ============================================
 app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      process.env.FRONTEND_URL, // 👈 https://mern-memo-app-client.onrender.com
-      "https://mern-memo-app-client-v2.onrender.com", // 👈 明示的に追加
+      process.env.FRONTEND_URL, 
+      "https://mern-memo-app-client-v2.onrender.com", 
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],

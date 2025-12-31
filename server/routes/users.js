@@ -1,7 +1,7 @@
 // server/routes/users.js
 const express = require("express");
-const verifyToken = require("../middleware/verifyToken"); // JWT認証を行うカスタムミドルウェア
-const User = require("../models/User"); // Userモデルをインポート
+const verifyToken = require("../middleware/verifyToken"); 
+const User = require("../models/User"); 
 
 const router = express.Router();
 

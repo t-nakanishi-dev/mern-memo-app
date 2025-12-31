@@ -16,15 +16,13 @@ const memoSchema = new mongoose.Schema(
     isPinned: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
 
-    // ここを修正！！
     attachments: [
       {
-        // ← new mongoose.Schema(...) をやめて、普通のオブジェクトで書く
-        _id: { type: mongoose.Schema.Types.ObjectId, auto: true }, // ← これで自動でユニークID付与！！
+        _id: { type: mongoose.Schema.Types.ObjectId, auto: true }, 
         url: { type: String, required: true },
         name: { type: String, required: true },
         type: { type: String, required: true },
-        uploadedAt: { type: Date, default: Date.now }, // おまけで便利
+        uploadedAt: { type: Date, default: Date.now }, 
       },
     ],
   },
