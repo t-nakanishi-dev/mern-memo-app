@@ -1,7 +1,7 @@
 // server/routes/memo.js
 const express = require("express");
-const verifyToken = require("../middleware/verifyToken"); // JWT認証を行うミドルウェア
-const Memo = require("../models/Memo"); // Memoモデルをインポート
+const verifyToken = require("../middleware/verifyToken"); 
+const Memo = require("../models/Memo"); 
 
 const router = express.Router();
 
@@ -41,26 +41,14 @@ router.post("/", verifyToken, async (req, res) => {
   try {
     const { title, content, category, attachments } = req.body;
 
-    // デバッグ用ログ（attachmentsが文字列として送られる場合の処理）
-    console.log("------------------- DEBUG LOG START -------------------");
-    console.log("Received attachments in server:", attachments);
-    console.log("Type of received attachments (typeof):", typeof attachments);
-    console.log(
-      "Is attachments an array (Array.isArray):",
-      Array.isArray(attachments)
-    );
-
     if (typeof attachments === "string") {
-      console.log("Attachments is a string. Attempting JSON.parse()...");
       try {
         const parsedAttachments = JSON.parse(attachments); // JSON文字列を配列に変換
-        console.log("Successfully parsed attachments:", parsedAttachments);
         req.body.attachments = parsedAttachments; // 上書き
       } catch (parseError) {
         console.error("Failed to parse attachments string:", parseError);
       }
     }
-    console.log("------------------- DEBUG LOG END ---------------------");
 
     // バリデーション：タイトル・内容は必須
     if (!title || !content) {
@@ -168,7 +156,6 @@ router.get("/:id", verifyToken, async (req, res) => {
 // =======================================
 router.put("/:id", verifyToken, async (req, res) => {
   try {
-    // ここが最重要！！ attachments をちゃんと受け取る！！
     const { title, content, category, isDone, isPinned, attachments } =
       req.body;
 

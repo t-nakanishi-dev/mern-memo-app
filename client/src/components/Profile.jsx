@@ -1,7 +1,7 @@
 // client/src/components/Profile.jsx 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetch } from "../apiFetch"; // ← 追加！
+import { apiFetch } from "../apiFetch"; 
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await apiFetch("/api/users/profile"); // ← token不要！
+        const res = await apiFetch("/api/users/profile"); 
         if (!res) return;
 
         if (!res.ok) throw new Error("取得失敗");

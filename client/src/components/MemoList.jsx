@@ -1,13 +1,13 @@
 // client/src/components/MemoList.jsx
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom"; // ← 追加！
+import { Link } from "react-router-dom"; 
 import { Toaster } from "react-hot-toast";
 import MemoForm from "./MemoForm";
 import MemoCard from "./MemoCard";
 import DeleteModal from "./DeleteModal";
 import MemoSortSelect from "./MemoSortSelect";
 import Pagination from "./Pagination";
-import { fetchTrashedMemos } from "../api"; // ← 追加！
+import { fetchTrashedMemos } from "../api"; 
 import { useMemoListLogic } from "../hooks/useMemoListLogic";
 import { useMemoActions } from "../hooks/useMemoActions";
 import { useFilteredMemos } from "../hooks/useFilteredMemos";
