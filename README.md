@@ -1,45 +1,44 @@
-# 📒 Memo App – シンプルなメモ管理アプリ
+# 📒 Memo App – メモ管理アプリ
 
 ## 🔗 デプロイURL
-https://memo-app.onrender.com
-
+https://mern-memo-app-client-v2.onrender.com
 ※スマートフォン・PC両方に対応
 
 ## 🔑 テストログイン情報
-Email: test@gmail.com  
-Password: test
+Email: t.nakanishi.dev@gmail.com 
+Password: t.nakanishi.dev
 
 ## 📸 スクリーンショット
-PC画面（メモ作成画面）
-
-メモ一覧画面
+![PC画面（メモ作成画面）](./images/create_memo_v2.png)
+![メモ一覧画面](./images/memo_list_v2.png)
 
 ## 📝 アプリ概要
-ユーザーが自分のメモを作成・編集・分類・管理できるシンプルなメモ管理ツールです。  
-カテゴリ分け・検索・アーカイブ機能で整理性を重視。直感的で使いやすいUI設計。
+ユーザーがメモを作成・編集・分類・管理できるメモ管理ツールです。
+カテゴリ分け・検索・画像添付に対応し、シンプルさと整理しやすい UI を重視しています。
 
 ## 🔧 使用技術
-- フロントエンド: React, Tailwind CSS, Axios, React Router  
+- フロントエンド: React, Tailwind CSS, Fetch API, React Router  
 - バックエンド: Node.js, Express  
 - データベース: MongoDB (Mongoose)  
-- ホスティング: Render, GitHub Pages  
+- ホスティング: Render  
 - その他: Firebase（画像アップロード機能）
+- 認証: JWT（Cookie-based Authentication）
+
 
 ## ✨ 主な機能
 - 📄 メモ作成・編集・削除：タイトル・本文・画像を含むメモ管理  
 - 🔍 検索機能：タイトルでリアルタイム検索  
 - 🏷 カテゴリ機能：カテゴリで分類・絞り込み  
-- 🗂 アーカイブ / ゴミ箱：不要メモを非表示・復元  
 - 🖼 画像アップロード：Firebaseで添付可能  
 - 📱 レスポンシブ対応：モバイル・PC両方に対応
 
 ## 💡 工夫した点・学び
 - 状態管理：Reactフック（useState, useEffect）で効率的管理  
-- データ設計：カテゴリ・アーカイブ・画像に対応したスキーマ設計  
+- データ設計：カテゴリ・画像に対応したスキーマ設計  
 - エラー対応：非同期処理やバリデーションを意識  
-- UI/UX：モバイル対応、余白・フォントサイズ調整で視認性向上  
-- 英語コメント：コード全体にコメント追加で可読性アップ
+- UI/UX：UI/UX を意識し、余白・視認性・モバイル最適化に配慮  
 
 ## 👤 作者情報
-- 名前：PiyoCode324  
-- GitHub：https://github.com/PiyoCode324
+- 名前：T.Nakanishi  
+- GitHub: [https://github.com/t-nakanishi-dev](https://github.com/t-nakanishi-dev)
+
