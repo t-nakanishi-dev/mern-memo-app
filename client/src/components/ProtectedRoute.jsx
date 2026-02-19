@@ -10,16 +10,15 @@ const ProtectedRoute = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // 軽量認証チェックエンドポイント
         const res = await apiFetch("/api/check");
+        console.log("🔍 auth check:", res);
 
-        // res が null の場合は apiFetch により自動ログアウト済み
         if (!res) {
           setIsAuthenticated(false);
           return;
         }
 
-        setIsAuthenticated(res.ok);
+        setIsAuthenticated(res.authenticated);
       } catch (err) {
         setIsAuthenticated(false);
       }

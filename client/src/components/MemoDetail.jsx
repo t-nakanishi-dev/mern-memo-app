@@ -15,7 +15,7 @@ import {
   Upload,
 } from "lucide-react";
 
-import { apiFetch } from "../apiFetch"; // ← これ必須！
+import { apiFetch } from "../apiFetch";
 import { uploadFile } from "../hooks/utils/uploadFile";
 
 const MemoDetail = () => {
@@ -40,23 +40,19 @@ const MemoDetail = () => {
     fetchMemo();
   }, [id]);
 
+  // ✅ JSON前提に修正
   const fetchMemo = async () => {
     try {
-      const res = await apiFetch(`/api/memos/${id}`);
-      if (!res) return;
+      const data = await apiFetch(`/api/memos/${id}`);
+      if (!data) return;
 
-      const data = await res.json();
-      if (res.ok) {
-        setMemo(data);
-        setEditedTitle(data.title || "");
-        setEditedContent(data.content || "");
-        setEditedCategory(data.category || "");
-        setExistingAttachments(data.attachments || []);
-      } else {
-        toast.error("メモの取得に失敗しました");
-      }
+      setMemo(data);
+      setEditedTitle(data.title || "");
+      setEditedContent(data.content || "");
+      setEditedCategory(data.category || "");
+      setExistingAttachments(data.attachments || []);
     } catch (err) {
-      toast.error("通信エラー");
+      toast.error("メモの取得に失敗しました");
     } finally {
       setLoading(false);
     }
@@ -83,6 +79,7 @@ const MemoDetail = () => {
     setExistingAttachments((prev) => prev.filter((f) => f._id !== fileId));
   };
 
+  // ✅ JSON前提に修正
   const handleUpdate = async () => {
     if (!editedTitle.trim()) return toast.error("タイトルを入力してください");
 
@@ -95,7 +92,7 @@ const MemoDetail = () => {
               currentFiles.map(async (file) => {
                 const url = await uploadFile(file, "memos");
                 return { url, name: file.name, type: file.type };
-              })
+              }),
             )
           : [];
 
@@ -109,7 +106,7 @@ const MemoDetail = () => {
         ...newAttachments,
       ];
 
-      const res = await apiFetch(`/api/memos/${id}`, {
+      const updated = await apiFetch(`/api/memos/${id}`, {
         method: "PUT",
         body: JSON.stringify({
           title: editedTitle,
@@ -119,20 +116,14 @@ const MemoDetail = () => {
         }),
       });
 
-      if (!res) return;
+      if (!updated) return;
 
-      if (res.ok) {
-        const updated = await res.json();
-        setMemo(updated);
-        setIsEditing(false);
-        setCurrentFiles([]);
-        setFilePreviews([]);
-        setExistingAttachments(updated.attachments || []);
-        toast.success("メモを更新しました！");
-      } else {
-        const error = await res.json();
-        toast.error(error.message || "更新に失敗");
-      }
+      setMemo(updated);
+      setIsEditing(false);
+      setCurrentFiles([]);
+      setFilePreviews([]);
+      setExistingAttachments(updated.attachments || []);
+      toast.success("メモを更新しました！");
     } catch (err) {
       toast.error("更新中にエラーが発生");
     } finally {
@@ -140,25 +131,34 @@ const MemoDetail = () => {
     }
   };
 
+  // ✅ JSON前提に修正
   const handleDelete = async () => {
     if (!window.confirm("本当に削除しますか？")) return;
-    const res = await apiFetch(`/api/memos/${id}`, { method: "DELETE" });
-    if (res && res.ok) {
+
+    const result = await apiFetch(`/api/memos/${id}`, {
+      method: "DELETE",
+    });
+
+    if (result !== null) {
       toast.success("メモを削除しました");
+      navigate(-1);
     } else {
       toast.error("削除に失敗");
     }
   };
 
+  // ✅ JSON前提に修正
   const togglePin = async () => {
-    const res = await apiFetch(`/api/memos/${id}/pin`, { method: "PATCH" });
-    if (res && res.ok) {
-      const updated = await res.json();
-      setMemo(updated);
-      toast.success(
-        updated.isPinned ? "ピン留めしました" : "ピン留めを解除しました"
-      );
-    }
+    const updated = await apiFetch(`/api/memos/${id}/pin`, {
+      method: "PATCH",
+    });
+
+    if (!updated) return;
+
+    setMemo(updated);
+    toast.success(
+      updated.isPinned ? "ピン留めしました" : "ピン留めを解除しました",
+    );
   };
 
   if (loading) {

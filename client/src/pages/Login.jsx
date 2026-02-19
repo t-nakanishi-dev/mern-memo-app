@@ -21,10 +21,13 @@ const Login = () => {
 
     try {
       // API呼び出し
-      const response = await login(email, password);
-      const data = await response.json();
+      console.log("🚀 login start");
 
-      if (response.ok) {
+      const data = await login(email, password);
+
+      console.log("✅ login response:", data);
+
+      if (data.success) {
         // ログイン成功時の処理（Cookie版）
         Cookies.set("accessToken", data.token, {
           expires: 7, // 7日間有効
@@ -39,6 +42,7 @@ const Login = () => {
       }
     } catch (err) {
       // ネットワークエラー（サーバーダウンなど）
+      console.error("LOGIN ERROR:", err);
       setError("ネットワークエラーが発生しました。");
     } finally {
       // ✅ 成否に関わらずローディング終了

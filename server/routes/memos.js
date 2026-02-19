@@ -1,7 +1,8 @@
 // server/routes/memo.js
 const express = require("express");
-const verifyToken = require("../middleware/verifyToken"); 
-const Memo = require("../models/Memo"); 
+const verifyToken = require("../middleware/verifyToken");
+const Memo = require("../models/Memo");
+const { memoCreateSchema } = require("../schemas/memoSchema");
 
 const router = express.Router();
 
@@ -35,36 +36,43 @@ router.get("/", verifyToken, async (req, res) => {
 
 // =======================================
 // POST /api/memos
-// メモ作成
+// メモ作成（Zodバリデーション版）
 // =======================================
 router.post("/", verifyToken, async (req, res) => {
   try {
-    const { title, content, category, attachments } = req.body;
-
-    if (typeof attachments === "string") {
+    // 🔹 attachments が文字列で来た場合の救済（現状維持）
+    if (typeof req.body.attachments === "string") {
       try {
-        const parsedAttachments = JSON.parse(attachments); // JSON文字列を配列に変換
-        req.body.attachments = parsedAttachments; // 上書き
-      } catch (parseError) {
-        console.error("Failed to parse attachments string:", parseError);
+        req.body.attachments = JSON.parse(req.body.attachments);
+      } catch (e) {
+        console.error("attachments parse error:", e);
       }
     }
 
-    // バリデーション：タイトル・内容は必須
-    if (!title || !content) {
-      return res.status(400).json({ message: "タイトルと内容は必須です。" });
+    // 🔥 Zod バリデーション（ここが面談評価ポイント）
+    const parsed = memoCreateSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "入力値が不正です",
+        errors: parsed.error.flatten(),
+      });
     }
 
-    // 新しいメモを作成
+    // 🔹 型安全に取り出し
+    const { title, content, category, attachments } = parsed.data;
+
+    // 🔹 新しいメモ作成
     const newMemo = new Memo({
-      userId: req.user.userId, // JWTから取得したユーザーID
+      userId: req.user.userId,
       title,
       content,
       category: category || "",
-      attachments: attachments || [], // 添付ファイル（空配列可）
+      attachments: attachments || [],
     });
 
     await newMemo.save();
+
     res.status(201).json(newMemo);
   } catch (err) {
     console.error("メモ作成エラー:", err);
@@ -81,7 +89,6 @@ router.post("/", verifyToken, async (req, res) => {
 router.get("/trash", verifyToken, async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 12;
-
 
   try {
     const trashedMemos = await Memo.find({
@@ -179,7 +186,7 @@ router.put("/:id", verifyToken, async (req, res) => {
     const updatedMemo = await Memo.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.userId },
       updateFields,
-      { new: true }
+      { new: true },
     );
 
     if (!updatedMemo) {
@@ -202,7 +209,7 @@ router.delete("/:id", verifyToken, async (req, res) => {
     const deletedMemo = await Memo.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.userId },
       { isDeleted: true }, // 論理削除
-      { new: true }
+      { new: true },
     );
     if (!deletedMemo) {
       return res.status(404).json({
@@ -227,7 +234,7 @@ router.put("/:id/restore", verifyToken, async (req, res) => {
     const restoredMemo = await Memo.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.userId },
       { isDeleted: false }, // ゴミ箱から復元
-      { new: true }
+      { new: true },
     );
 
     if (!restoredMemo) {

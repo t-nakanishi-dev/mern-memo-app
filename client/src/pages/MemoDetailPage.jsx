@@ -17,26 +17,16 @@ const MemoDetailPage = () => {
   // エラーメッセージを保持
   const [error, setError] = useState(null);
 
-
-
   // コンポーネントがマウントされたとき or id/token が変化したときに実行
   useEffect(() => {
     const getMemo = async () => {
-
       try {
-        // APIからメモを取得（token と id を渡す）
-        const res = await fetchMemo(id);
-
-        // レスポンスがエラーなら例外を投げる
-        if (!res.ok) {
-          throw new Error("メモの取得に失敗しました");
-        }
-
-        // JSONデータを取得して state に保存
-        const data = await res.json();
+        // ✅ apiFetch は JSON を返す
+        const data = await fetchMemo(id);
         setMemo(data);
+        const res = await fetchMemo(id);
+        console.log("🔍 memo detail res:", res);
       } catch (err) {
-        // エラー時: メッセージを state に保存し、2秒後にメモ一覧へ戻す
         setError(err.message || "メモの取得に失敗しました。");
         setTimeout(() => navigate("/"), 2000);
       }
@@ -44,6 +34,8 @@ const MemoDetailPage = () => {
 
     getMemo();
   }, [id, navigate]);
+
+  console.log("🧠 memo state:", memo);
 
   // エラーがある場合の表示
   if (error) {

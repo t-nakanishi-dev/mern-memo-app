@@ -3,10 +3,6 @@ import { useCallback } from "react";
 import { createMemo, updateMemo, deleteMemo } from "../api";
 import { toast } from "react-hot-toast";
 
-/**
- * メモに対するアクションを扱うカスタムフック
- * （作成・更新・削除・ピン切替・完了状態切替）
- */
 export const useMemoActions = ({
   loadMemos,
   setLoading,
@@ -20,17 +16,12 @@ export const useMemoActions = ({
       setError(null);
 
       try {
-        const response = await createMemo({
+        await createMemo({
           title,
           content,
           category,
           attachments,
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "メモ作成に失敗しました。");
-        }
 
         await loadMemos();
         toast.success("メモを作成しました！");
@@ -42,7 +33,7 @@ export const useMemoActions = ({
         setLoading(false);
       }
     },
-    [loadMemos, setLoading, setError]
+    [loadMemos, setLoading, setError],
   );
 
   // 🔸 メモ編集・更新処理
@@ -62,12 +53,7 @@ export const useMemoActions = ({
           payload.attachments = attachments;
         }
 
-        const response = await updateMemo(id, payload);
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "メモ更新に失敗しました。");
-        }
+        await updateMemo(id, payload);
 
         await loadMemos();
         setEditingMemoId(null);
@@ -80,7 +66,7 @@ export const useMemoActions = ({
         setLoading(false);
       }
     },
-    [loadMemos, setLoading, setError, setEditingMemoId]
+    [loadMemos, setLoading, setError, setEditingMemoId],
   );
 
   // 🔸 メモ削除処理（ゴミ箱へ移動）
@@ -90,12 +76,7 @@ export const useMemoActions = ({
       setError(null);
 
       try {
-        const response = await deleteMemo(id);
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "メモ削除に失敗しました。");
-        }
+        await deleteMemo(id);
 
         await loadMemos();
         toast.success("メモをゴミ箱に移動しました。");
@@ -107,7 +88,7 @@ export const useMemoActions = ({
         setLoading(false);
       }
     },
-    [loadMemos, setLoading, setError]
+    [loadMemos, setLoading, setError],
   );
 
   // 🔸 完了状態切替処理
@@ -117,15 +98,11 @@ export const useMemoActions = ({
       setError(null);
 
       try {
-        const response = await updateMemo(memo._id, {
+        await updateMemo(memo._id, {
           title: memo.title,
           content: memo.content,
           isDone: !memo.isDone,
         });
-
-        if (!response.ok) {
-          throw new Error("完了状態の切り替えに失敗しました。");
-        }
 
         await loadMemos();
       } catch (err) {
@@ -136,7 +113,7 @@ export const useMemoActions = ({
         setLoading(false);
       }
     },
-    [loadMemos, setLoading, setError]
+    [loadMemos, setLoading, setError],
   );
 
   // 🔸 ピン状態切替処理
@@ -145,13 +122,9 @@ export const useMemoActions = ({
       setLoading(true);
 
       try {
-        const response = await updateMemo(memo._id, {
+        await updateMemo(memo._id, {
           isPinned: !memo.isPinned,
         });
-
-        if (!response.ok) {
-          throw new Error("ピン状態の更新に失敗しました。");
-        }
 
         await loadMemos();
       } catch (err) {
@@ -161,7 +134,7 @@ export const useMemoActions = ({
         setLoading(false);
       }
     },
-    [loadMemos, setLoading]
+    [loadMemos, setLoading],
   );
 
   return {

@@ -34,22 +34,18 @@ export const useMemoListLogic = (page, limit) => {
     setError(null); // エラーリセット
 
     try {
-      // API からメモを取得
-      const response = await fetchMemos(page, limit);
+      // API からメモを取得（← これがもう data）
+      const data = await fetchMemos(page, limit);
 
-      // それ以外の HTTP エラー処理
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      console.log("📦 memos data:", data);
 
       // 成功した場合：メモ一覧と総件数を state にセット
-      const data = await response.json();
       setMemos(data.memos);
       setTotal(data.total);
     } catch (err) {
       console.error("メモ取得エラー:", err);
       setError(err.message || "メモの取得に失敗しました。");
-      setMemos([]); // 取得失敗時は一覧を空に
+      setMemos([]);
       toast.error(err.message || "メモの取得に失敗しました。");
     } finally {
       setLoading(false); // ローディング終了
