@@ -21,15 +21,12 @@ const TrashMemoList = () => {
   const [total, setTotal] = useState(0);
 
   const loadTrashedMemos = async (pageToLoad = page) => {
-
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetchTrashedMemos(pageToLoad, limit);
-      if (!res.ok) throw new Error("ゴミ箱のメモを取得できませんでした");
+      const data = await fetchTrashedMemos(pageToLoad, limit);
 
-      const data = await res.json();
       setMemos(data.memos || []);
       setTotal(data.total || 0);
       setPage(data.page || 1);
@@ -48,12 +45,12 @@ const TrashMemoList = () => {
   // 復元
   const handleRestore = async (id) => {
     try {
-      const res = await restoreMemo(id);
-      if (!res.ok) throw new Error("復元に失敗しました");
+      await restoreMemo(id); // ← ResponseではなくJSON想定
+
       toast.success("メモを復元しました！");
       loadTrashedMemos();
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || "復元に失敗しました");
     }
   };
 
@@ -65,12 +62,12 @@ const TrashMemoList = () => {
       return;
 
     try {
-      const res = await permanentlyDeleteMemo(id);
-      if (!res.ok) throw new Error("削除に失敗しました");
+      await permanentlyDeleteMemo(id); // ← ResponseではなくJSON想定
+
       toast.success("完全に削除しました");
       loadTrashedMemos();
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || "削除に失敗しました");
     }
   };
 
@@ -78,20 +75,20 @@ const TrashMemoList = () => {
   const handleEmptyTrash = async () => {
     if (
       !window.confirm(
-        "ゴミ箱を空にしますか？\nすべてのメモが完全に削除されます。"
+        "ゴミ箱を空にしますか？\nすべてのメモが完全に削除されます。",
       )
     )
       return;
 
     try {
-      const res = await emptyTrash();
-      if (!res.ok) throw new Error("ゴミ箱を空にできませんでした");
+      await emptyTrash(); // ← ResponseではなくJSON想定
+
       toast.success("ゴミ箱を空にしました");
       setMemos([]);
       setTotal(0);
       setPage(1);
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || "ゴミ箱を空にできませんでした");
     }
   };
 
