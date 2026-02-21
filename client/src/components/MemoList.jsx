@@ -109,7 +109,7 @@ const MemoList = () => {
               placeholder="メモを検索..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
+              className="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-700 border  text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
             />
           </div>
 

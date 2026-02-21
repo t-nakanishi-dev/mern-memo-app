@@ -43,23 +43,14 @@ const PasswordReset = () => {
     setLoading(true);
 
     try {
-      // API呼び出し（token と newPassword を渡す）
-      const res = await passwordReset(token, newPassword);
+      await passwordReset(token, newPassword);
 
-      if (res.ok) {
-        // 成功時
-        setMessage("パスワードがリセットされました。ログインしてください。");
-        setTimeout(() => {
-          navigate("/login"); // 3秒後にログインページへ
-        }, 3000);
-      } else {
-        // サーバーから返却されたエラーメッセージを取得
-        const data = await res.json();
-        setError(data.message || "リセットに失敗しました。");
-      }
+      setMessage("パスワードがリセットされました。ログインしてください。");
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
     } catch (err) {
-      // ネットワークエラーなど
-      setError("ネットワークエラーが発生しました。");
+      setError(err.message || "リセットに失敗しました。");
     } finally {
       setLoading(false);
     }

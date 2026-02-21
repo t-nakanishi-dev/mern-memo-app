@@ -24,22 +24,13 @@ const PasswordResetRequest = () => {
     setLoading(true);
 
     try {
-      // API呼び出し
-      const res = await passwordResetRequest(email);
+      await passwordResetRequest(email);
 
-      if (res.ok) {
-        // 成功時 → サーバーがリセット用メールを送信
-        setMessage(
-          "パスワードリセット用のリンクを送信しました。メールをご確認ください。"
-        );
-      } else {
-        // サーバーエラーの場合（例: 登録されていないメールなど）
-        const data = await res.json();
-        setError(data.message || "エラーが発生しました。");
-      }
+      setMessage(
+        "パスワードリセット用のリンクを送信しました。メールをご確認ください。",
+      );
     } catch (err) {
-      // 通信エラー
-      setError("ネットワークエラーが発生しました。");
+      setError(err.message || "エラーが発生しました。");
     } finally {
       setLoading(false);
     }
