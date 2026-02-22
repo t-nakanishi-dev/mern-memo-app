@@ -1,6 +1,6 @@
-// src/App.jsx
-import React, { useEffect, useState } from "react";
+// src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 
 import MemoList from "./components/MemoList";
 import Signup from "./pages/Signup";
@@ -12,41 +12,34 @@ import Profile from "./components/Profile";
 import MemoDetailPage from "./pages/MemoDetailPage";
 import TrashMemoList from "./components/TrashMemoList";
 import Layout from "./components/Layout";
+import { useThemeStore } from "./store/themeStore";
 
 // ゲスト用シンプルレイアウト（ログイン・登録画面用）
-const GuestLayout = ({ children }) => {
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center items-center px-4">
-      <div className="w-full max-w-md">{children}</div>
-      <div className="absolute bottom-6 text-center text-xs text-gray-500 dark:text-gray-600">
-        © 2025 | Built with MERN Stack
-      </div>
+const GuestLayout = ({ children }: { children: React.ReactNode }) => (
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center items-center px-4">
+    <div className="w-full max-w-md">{children}</div>
+    <div className="absolute bottom-6 text-center text-xs text-gray-500 dark:text-gray-600">
+      © 2025 | Built with MERN Stack
     </div>
-  );
-};
+  </div>
+);
 
-const App = () => {
-  const [darkMode, setDarkMode] = useState(() => {
-    return (
-      typeof window !== "undefined" && localStorage.getItem("theme") === "dark"
-    );
-  });
+function App() {
+  const theme = useThemeStore((state) => state.theme);
 
+  // テーマ変更時に class を更新（persistのonRehydrateStorageで初回は処理済み）
   useEffect(() => {
-    if (darkMode) {
+    if (theme === "dark") {
       document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
     } else {
       document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
     }
-  }, [darkMode]);
+  }, [theme]);
 
   return (
     <Router>
       <div className="min-h-screen transition-colors duration-300">
         <Routes>
-          {/* 認証不要ページ */}
           <Route
             path="/login"
             element={
@@ -85,7 +78,9 @@ const App = () => {
             path="/*"
             element={
               <ProtectedRoute>
-                <Layout darkMode={darkMode} setDarkMode={setDarkMode}>
+                <Layout>
+                  {" "}
+                  {/* props不要に！ */}
                   <Routes>
                     <Route path="/" element={<MemoList />} />
                     <Route path="/profile" element={<Profile />} />
@@ -100,6 +95,6 @@ const App = () => {
       </div>
     </Router>
   );
-};
+}
 
 export default App;
