@@ -1,5 +1,5 @@
 // client/src/components/MemoDetail.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { toast } from "react-hot-toast";
@@ -36,12 +36,8 @@ const MemoDetail = () => {
 
   const cacheBuster = () => Date.now();
 
-  useEffect(() => {
-    fetchMemo();
-  }, [id]);
-
-  // ✅ JSON前提に修正
-  const fetchMemo = async () => {
+  // fetchMemo を useCallback で安定化
+  const fetchMemo = useCallback(async () => {
     try {
       const data = await apiFetch(`/api/memos/${id}`);
       if (!data) return;
@@ -56,7 +52,11 @@ const MemoDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]); // id が変わったら再取得
+
+  useEffect(() => {
+    fetchMemo();
+  }, [fetchMemo]); // fetchMemo を依存に追加
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -79,7 +79,6 @@ const MemoDetail = () => {
     setExistingAttachments((prev) => prev.filter((f) => f._id !== fileId));
   };
 
-  // ✅ JSON前提に修正
   const handleUpdate = async () => {
     if (!editedTitle.trim()) return toast.error("タイトルを入力してください");
 
@@ -131,7 +130,6 @@ const MemoDetail = () => {
     }
   };
 
-  // ✅ JSON前提に修正
   const handleDelete = async () => {
     if (!window.confirm("本当に削除しますか？")) return;
 
@@ -147,7 +145,6 @@ const MemoDetail = () => {
     }
   };
 
-  // ✅ JSON前提に修正
   const togglePin = async () => {
     const updated = await apiFetch(`/api/memos/${id}/pin`, {
       method: "PATCH",

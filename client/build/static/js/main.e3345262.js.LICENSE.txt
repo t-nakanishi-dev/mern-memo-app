@@ -1,3 +1,5 @@
+/*! js-cookie v3.0.5 | MIT */
+
 /**
  * @license
  * Copyright 2017 Google LLC
@@ -155,6 +157,13 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
+ */
+
+/**
+ * @license lucide-react v0.554.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
  */
 
 /**

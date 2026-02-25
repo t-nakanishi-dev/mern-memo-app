@@ -1,5 +1,5 @@
 // client/src/components/TrashMemoList.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   fetchTrashedMemos,
@@ -20,33 +20,35 @@ const TrashMemoList = () => {
   const limit = 12;
   const [total, setTotal] = useState(0);
 
-  const loadTrashedMemos = async (pageToLoad = page) => {
-    setLoading(true);
-    setError(null);
+  const loadTrashedMemos = useCallback(
+    async (pageToLoad = page) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const data = await fetchTrashedMemos(pageToLoad, limit);
+      try {
+        const data = await fetchTrashedMemos(pageToLoad, limit);
 
-      setMemos(data.memos || []);
-      setTotal(data.total || 0);
-      setPage(data.page || 1);
-    } catch (err) {
-      setError(err.message);
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setMemos(data.memos || []);
+        setTotal(data.total || 0);
+        setPage(data.page || 1);
+      } catch (err) {
+        setError(err.message);
+        toast.error(err.message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [page, limit],
+  ); // page と limit が変わったら再定義
 
   useEffect(() => {
     loadTrashedMemos();
-  }, [page]);
+  }, [loadTrashedMemos]); // loadTrashedMemos を依存に追加
 
   // 復元
   const handleRestore = async (id) => {
     try {
-      await restoreMemo(id); // ← ResponseではなくJSON想定
-
+      await restoreMemo(id);
       toast.success("メモを復元しました！");
       loadTrashedMemos();
     } catch (err) {
@@ -54,7 +56,7 @@ const TrashMemoList = () => {
     }
   };
 
-  // 完全削除（ゴミ箱からも消す）
+  // 完全削除
   const handlePermanentDelete = async (id) => {
     if (
       !window.confirm("本当に完全に削除しますか？\nこの操作は元に戻せません。")
@@ -62,8 +64,7 @@ const TrashMemoList = () => {
       return;
 
     try {
-      await permanentlyDeleteMemo(id); // ← ResponseではなくJSON想定
-
+      await permanentlyDeleteMemo(id);
       toast.success("完全に削除しました");
       loadTrashedMemos();
     } catch (err) {
@@ -81,8 +82,7 @@ const TrashMemoList = () => {
       return;
 
     try {
-      await emptyTrash(); // ← ResponseではなくJSON想定
-
+      await emptyTrash();
       toast.success("ゴミ箱を空にしました");
       setMemos([]);
       setTotal(0);

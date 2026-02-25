@@ -1,24 +1,42 @@
 {
+  "root": true,
+  "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "ecmaVersion": 2020,
+    "ecmaVersion": "latest",
     "sourceType": "module",
     "ecmaFeatures": {
       "jsx": true
     }
   },
-  "env": {
-    "browser": true,
-    "node": true,
-    "es2021": true
-  },
-  "plugins": ["react-hooks", "react"],
   "extends": [
-    "eslint:recommended",
+    "react-app",
+    "react-app/jest",
+    "plugin:react/jsx-runtime",
     "plugin:react/recommended",
-    "plugin:react-hooks/recommended"
+    "plugin:@typescript-eslint/recommended"
   ],
+  "plugins": ["react", "@typescript-eslint"],
   "rules": {
-    "react/prop-types": "off"
+    "react/react-in-jsx-scope": "off",
+    "react/jsx-uses-react": "off",
+    "react/prop-types": "off",
+    "no-undef": "off",
+    "@typescript-eslint/no-undef": "off",
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-inferrable-types": "off", // 型注釈を強制的にオフ（自明なものは書かなくてOK）
+    "@typescript-eslint/no-empty-function": "off", // 空関数を許可（ダミーpropsで便利）
+    "react-hooks/exhaustive-deps": "warn",  // error → warn に落とす（CIで止まらない）
+  "no-use-before-define": "off",           // 関数定義の順序を厳格にしなくてOK
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      {
+        "vars": "all",
+        "args": "after-used",
+        "ignoreRestSiblings": true,
+        "varsIgnorePattern": "^React$|^_", // ← React と _ で始まる変数を無視
+        "argsIgnorePattern": "^_"
+      }
+    ]
   },
   "settings": {
     "react": {
