@@ -3,7 +3,6 @@
 import { apiFetch } from "./apiFetch";
 
 import type {
-  User,
   AuthResponse,
   Memo,
   MemoPayload,
