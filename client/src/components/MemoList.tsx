@@ -12,18 +12,7 @@ import { useMemoListLogic } from "../hooks/useMemoListLogic";
 import { useMemoActions } from "../hooks/useMemoActions";
 import { useFilteredMemos } from "../hooks/useFilteredMemos";
 import { Search, Sparkles, PlusCircle, Loader2, Package } from "lucide-react";
-
-// 仮の型（後で types/api.ts の Memo に統一推奨）
-interface Memo {
-  _id: string;
-  title?: string;
-  content?: string;
-  category?: string;
-  isDone?: boolean;
-  isPinned?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { Memo } from "@/types/api"; // これでOKになるはず
 
 const MemoList: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "priority">(
@@ -40,11 +29,7 @@ const MemoList: React.FC = () => {
     useMemoListLogic(page, limit);
 
   const { handleCreate, handleDelete, handleToggleDone, handleTogglePin } =
-    useMemoActions({
-      loadMemos,
-      setLoading,
-      setError,
-    });
+    useMemoActions({ loadMemos, setLoading, setError });
 
   const { sortedAndFilteredMemos } = useFilteredMemos(
     memos,
@@ -61,7 +46,6 @@ const MemoList: React.FC = () => {
     setShowDeleteModal(true);
   };
 
-  // ゴミ箱件数取得（修正版：PagedMemosResponse を直接使う）
   useEffect(() => {
     const fetchTrashedCount = async () => {
       try {
@@ -74,13 +58,11 @@ const MemoList: React.FC = () => {
 
     fetchTrashedCount();
     const interval = setInterval(fetchTrashedCount, 30000);
-
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="max-w-7xl mx-auto">
-      {/* ヘッダー */}
       <div className="flex items-center justify-between mb-10">
         <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
           マイメモ
@@ -100,7 +82,6 @@ const MemoList: React.FC = () => {
         </Link>
       </div>
 
-      {/* 検索・フィルタ */}
       <div className="mb-10 bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div className="relative">
@@ -168,15 +149,19 @@ const MemoList: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7">
-        {sortedAndFilteredMemos.map((memo) => (
-          <MemoCard
-            key={memo._id}
-            memo={memo}
-            confirmDelete={confirmDelete}
-            handleToggleDone={handleToggleDone}
-            handleTogglePin={handleTogglePin}
-          />
-        ))}
+        {sortedAndFilteredMemos.map(
+          (
+            memo: Memo, // ← ここで Memo 型を使う
+          ) => (
+            <MemoCard
+              key={memo._id}
+              memo={memo}
+              confirmDelete={confirmDelete}
+              handleToggleDone={handleToggleDone}
+              handleTogglePin={handleTogglePin}
+            />
+          ),
+        )}
       </div>
 
       {total > limit && (
@@ -192,7 +177,7 @@ const MemoList: React.FC = () => {
       <DeleteModal
         isOpen={showDeleteModal}
         onConfirm={async () => {
-          await handleDelete(selectedMemoId!);
+          if (selectedMemoId) await handleDelete(selectedMemoId);
           setShowDeleteModal(false);
         }}
         onCancel={() => setShowDeleteModal(false)}

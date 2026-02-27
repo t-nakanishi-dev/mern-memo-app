@@ -1,8 +1,8 @@
-// client/src/components/MemoCard.jsx
+// src/components/MemoCard.tsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm"; // テーブル・タスクリスト・打ち消し線などに必要
+import remarkGfm from "remark-gfm";
 import {
   Edit3,
   Trash2,
@@ -15,8 +15,16 @@ import {
   X,
   ExternalLink,
 } from "lucide-react";
+import { Memo } from "@/types/api";
 
-const MemoCard = ({
+interface MemoCardProps {
+  memo: Memo;
+  confirmDelete: (id: string) => void;
+  handleToggleDone: (memo: Memo) => Promise<void>;
+  handleTogglePin: (memo: Memo) => Promise<void>;
+}
+
+const MemoCard: React.FC<MemoCardProps> = ({
   memo,
   confirmDelete,
   handleToggleDone,
@@ -25,14 +33,14 @@ const MemoCard = ({
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [pdfUrl, setPdfUrl] = useState("");
 
-  const openPdfModal = (url) => {
+  const openPdfModal = (url: string) => {
     setPdfUrl(url);
     setShowPdfModal(true);
   };
 
   const isDone = memo.isDone;
 
-  // \n を実際の改行に変換（DBに \\n で保存されてるため）
+  // \n を実際の改行に変換
   const processedContent = memo.content
     ? memo.content.replace(/\\n/g, "\n")
     : "内容がありません";
@@ -70,28 +78,20 @@ const MemoCard = ({
           </span>
         )}
 
-        {/* Markdown で内容を美しく表示 */}
+        {/* Markdown 表示（v10 対応） */}
         <div className="prose prose-sm dark:prose-invert max-w-none mb-4">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
-              code: ({ inline, className, children, ...props }) => {
+              code({ node, className, children, ...props }) {
+                // v10 では inline は削除されたので、className で判断（fenced code block は language-xxx クラスがつく）
                 const match = /language-(\w+)/.exec(className || "");
-                return !inline ? (
-                  <code
-                    className={`block bg-gray-900 text-white rounded-lg px-4 py-3 overflow-x-auto font-mono text-sm leading-relaxed ${
-                      match ? className : "language-text"
-                    }`}
-                    style={{
-                      fontVariantLigatures: "none",
-                      letterSpacing: "-0.02em",
-                      fontWeight: 400,
-                    }}
-                    {...props}
-                  >
-                    {children}
-                  </code>
-                ) : (
+
+                // ブロックコード（match がある場合）とインラインコードを区別
+                const isInline = !match;
+
+                return isInline ? (
+                  // インラインコード（バッククォート単体）
                   <code
                     className="bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono"
                     style={{
@@ -103,9 +103,24 @@ const MemoCard = ({
                   >
                     {children}
                   </code>
+                ) : (
+                  // ブロックコード（``` で囲まれたもの）
+                  <code
+                    className={`block bg-gray-900 text-white rounded-lg px-4 py-3 overflow-x-auto font-mono text-sm leading-relaxed ${
+                      className || ""
+                    }`}
+                    style={{
+                      fontVariantLigatures: "none",
+                      letterSpacing: "-0.02em",
+                      fontWeight: 400,
+                    }}
+                    {...props}
+                  >
+                    {children}
+                  </code>
                 );
               },
-              pre: ({ children }) => <>{children}</>,
+              pre: ({ children }) => <>{children}</>, // pre はそのまま
             }}
           >
             {processedContent}

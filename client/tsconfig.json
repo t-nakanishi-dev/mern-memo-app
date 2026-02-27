@@ -8,7 +8,7 @@
 
     "strict": false,
 
-    "allowJs": false, // ← ★ここが最重要
+    "allowJs": false,
     "checkJs": false,
 
     "moduleResolution": "node",
@@ -16,7 +16,13 @@
     "skipLibCheck": true,
 
     "forceConsistentCasingInFileNames": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+
+    // ★ ここを追加（これが一番重要）
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src"]
 }
