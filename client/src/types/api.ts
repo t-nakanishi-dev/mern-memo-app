@@ -33,3 +33,12 @@ export type MemoPayload = {
   title: string;
   content: string;
 };
+
+/**
+ * ページネーション付きメモ一覧のレスポンス型
+ * サーバー側：{ memos: Memo[], total: number }
+ */
+export interface PagedMemosResponse {
+  memos: Memo[];
+  total: number;
+}

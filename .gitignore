@@ -7,6 +7,9 @@ server/node_modules/
 .env.production
 .env.local
 
+# Build output
+build/
+
 MEMO.md
 面談.md
 日誌.md

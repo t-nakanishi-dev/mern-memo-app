@@ -6,12 +6,11 @@ import type {
   AuthResponse,
   Memo,
   MemoPayload,
+  PagedMemosResponse, // ← 追加
 } from "./types/api";
 
 /**
  * API のベースURL
- * .env に定義された URL を使用
- * （undefined の可能性があるため、実運用ではチェックしてもよい）
  */
 const API_BASE_URL = process.env.REACT_APP_API_URL as string;
 
@@ -19,14 +18,9 @@ const API_BASE_URL = process.env.REACT_APP_API_URL as string;
  * ユーザー認証関連
  * ============================= */
 
-/**
- * サインアップ
- * @param email - ユーザーのメールアドレス
- * @param password - パスワード
- */
 export const signup = async (
   email: string,
-  password: string
+  password: string,
 ): Promise<AuthResponse> => {
   return apiFetch(`${API_BASE_URL}/api/signup`, {
     method: "POST",
@@ -34,14 +28,9 @@ export const signup = async (
   });
 };
 
-/**
- * ログイン
- * @param email - ユーザーのメールアドレス
- * @param password - パスワード
- */
 export const login = async (
   email: string,
-  password: string
+  password: string,
 ): Promise<AuthResponse> => {
   return apiFetch(`${API_BASE_URL}/api/login`, {
     method: "POST",
@@ -53,116 +42,75 @@ export const login = async (
  * メモ関連（Cookie 認証）
  * ============================= */
 
-/**
- * メモ一覧取得（ページネーション対応）
- */
 export const fetchMemos = async (
   page: number = 1,
-  limit: number = 12
-): Promise<Memo[]> => {
-  return apiFetch(
-    `${API_BASE_URL}/api/memos?page=${page}&limit=${limit}`
+  limit: number = 12,
+): Promise<PagedMemosResponse> => {
+  return apiFetch<PagedMemosResponse>(
+    `${API_BASE_URL}/api/memos?page=${page}&limit=${limit}`,
   );
 };
 
-/**
- * メモ作成
- */
-export const createMemo = async (
-  memo: MemoPayload
-): Promise<Memo> => {
-  return apiFetch(`${API_BASE_URL}/api/memos`, {
+export const createMemo = async (memo: MemoPayload): Promise<Memo> => {
+  return apiFetch<Memo>(`${API_BASE_URL}/api/memos`, {
     method: "POST",
     body: JSON.stringify(memo),
   });
 };
 
-/**
- * メモ更新
- */
 export const updateMemo = async (
   id: string,
-  updatedData: MemoPayload
+  updatedData: MemoPayload,
 ): Promise<Memo> => {
-  return apiFetch(`${API_BASE_URL}/api/memos/${id}`, {
+  return apiFetch<Memo>(`${API_BASE_URL}/api/memos/${id}`, {
     method: "PUT",
     body: JSON.stringify(updatedData),
   });
 };
 
-/**
- * メモ削除（論理削除）
- */
-export const deleteMemo = async (
-  id: string
-): Promise<void> => {
-  return apiFetch(`${API_BASE_URL}/api/memos/${id}`, {
+export const deleteMemo = async (id: string): Promise<void> => {
+  return apiFetch<void>(`${API_BASE_URL}/api/memos/${id}`, {
     method: "DELETE",
   });
 };
 
-/**
- * メモ1件取得
- */
-export const fetchMemo = async (
-  id: string
-): Promise<Memo> => {
-  return apiFetch(`${API_BASE_URL}/api/memos/${id}`);
+export const fetchMemo = async (id: string): Promise<Memo> => {
+  return apiFetch<Memo>(`${API_BASE_URL}/api/memos/${id}`);
 };
 
-/**
- * ゴミ箱のメモ一覧取得
- */
 export const fetchTrashedMemos = async (
   page: number,
-  limit: number
-): Promise<Memo[]> => {
-  return apiFetch(
-    `${API_BASE_URL}/api/memos/trash?page=${page}&limit=${limit}`
+  limit: number,
+): Promise<PagedMemosResponse> => {
+  return apiFetch<PagedMemosResponse>(
+    `${API_BASE_URL}/api/memos/trash?page=${page}&limit=${limit}`,
   );
 };
 
-/**
- * ゴミ箱からメモを復元
- */
-export const restoreMemo = async (
-  id: string
-): Promise<Memo> => {
-  return apiFetch(`${API_BASE_URL}/api/memos/${id}/restore`, {
+export const restoreMemo = async (id: string): Promise<Memo> => {
+  return apiFetch<Memo>(`${API_BASE_URL}/api/memos/${id}/restore`, {
     method: "PUT",
   });
 };
 
-/**
- * メモを完全削除
- */
-export const permanentlyDeleteMemo = async (
-  id: string
-): Promise<void> => {
-  return apiFetch(`${API_BASE_URL}/api/memos/${id}/permanent`, {
+export const permanentlyDeleteMemo = async (id: string): Promise<void> => {
+  return apiFetch<void>(`${API_BASE_URL}/api/memos/${id}/permanent`, {
     method: "DELETE",
   });
 };
 
-/**
- * ゴミ箱を空にする
- */
 export const emptyTrash = async (): Promise<void> => {
-  return apiFetch(`${API_BASE_URL}/api/memos/trash`, {
+  return apiFetch<void>(`${API_BASE_URL}/api/memos/trash`, {
     method: "DELETE",
   });
 };
 
 /* =============================
  * パスワードリセット関連
- * （認証不要のため fetch を使用）
  * ============================= */
 
-/**
- * パスワードリセットメール送信
- */
 export const passwordResetRequest = async (
-  email: string
+  email: string,
 ): Promise<Response> => {
   return fetch(`${API_BASE_URL}/api/password-reset-request`, {
     method: "POST",
@@ -171,12 +119,9 @@ export const passwordResetRequest = async (
   });
 };
 
-/**
- * パスワードリセット実行
- */
 export const passwordReset = async (
   token: string,
-  newPassword: string
+  newPassword: string,
 ): Promise<Response> => {
   return fetch(`${API_BASE_URL}/api/password-reset`, {
     method: "POST",

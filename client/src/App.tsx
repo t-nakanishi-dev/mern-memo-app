@@ -14,8 +14,11 @@ import TrashMemoList from "./components/TrashMemoList";
 import Layout from "./components/Layout";
 import { useThemeStore } from "./store/themeStore";
 
-// ゲスト用シンプルレイアウト（ログイン・登録画面用）
-const GuestLayout = ({ children }: { children: React.ReactNode }) => (
+interface GuestLayoutProps {
+  children: React.ReactNode;
+}
+
+const GuestLayout = ({ children }: GuestLayoutProps) => (
   <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center items-center px-4">
     <div className="w-full max-w-md">{children}</div>
     <div className="absolute bottom-6 text-center text-xs text-gray-500 dark:text-gray-600">
@@ -27,19 +30,15 @@ const GuestLayout = ({ children }: { children: React.ReactNode }) => (
 function App() {
   const theme = useThemeStore((state) => state.theme);
 
-  // テーマ変更時に class を更新（persistのonRehydrateStorageで初回は処理済み）
   useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
   return (
     <Router>
       <div className="min-h-screen transition-colors duration-300">
         <Routes>
+          {/* ゲスト用ルート */}
           <Route
             path="/login"
             element={
@@ -73,24 +72,26 @@ function App() {
             }
           />
 
-          {/* 認証必要ページ：一括でProtectedRoute + Layoutで囲む */}
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  {" "}
-                  {/* props不要に！ */}
-                  <Routes>
-                    <Route path="/" element={<MemoList />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/memo/:id" element={<MemoDetailPage />} />
-                    <Route path="/trash" element={<TrashMemoList />} />
-                  </Routes>
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
+          {/* 認証が必要なルート全体 */}
+          <Route element={<ProtectedRoute />}>
+            {/* Layout で囲むルート */}
+            <Route element={<Layout />}>
+              <Route path="/" element={<MemoList />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/memo/:id" element={<MemoDetailPage />} />
+              <Route path="/trash" element={<TrashMemoList />} />
+
+              {/* 404フォールバック（推奨） */}
+              <Route
+                path="*"
+                element={
+                  <div className="text-center py-20">
+                    404 - ページが見つかりません
+                  </div>
+                }
+              />
+            </Route>
+          </Route>
         </Routes>
       </div>
     </Router>

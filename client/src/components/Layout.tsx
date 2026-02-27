@@ -1,14 +1,8 @@
 // src/components/Layout.tsx
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-
+import { Link, useNavigate, Outlet } from "react-router-dom";
 import { useThemeStore } from "../store/themeStore";
 
-type LayoutProps = {
-  children: React.ReactNode;
-};
-
-const Layout = ({ children }: LayoutProps) => {
+const Layout = () => {
   const navigate = useNavigate();
   const userEmail = localStorage.getItem("email") || "ユーザー";
 
@@ -16,23 +10,21 @@ const Layout = ({ children }: LayoutProps) => {
 
   const handleLogout = async () => {
     try {
-      // サーバー側で access / refresh を両方削除
       await fetch(`${process.env.REACT_APP_API_URL}/api/logout`, {
         method: "POST",
-        credentials: "include", // ← Cookie を送るため必須
+        credentials: "include",
       });
     } catch (error) {
       console.error("ログアウトエラー:", error);
     }
 
-    // クライアント側のデータも削除
     localStorage.removeItem("email");
-
     navigate("/login");
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* ヘッダー */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -70,8 +62,9 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       </header>
 
+      {/* メインコンテンツ */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
+        <Outlet />
       </main>
     </div>
   );
