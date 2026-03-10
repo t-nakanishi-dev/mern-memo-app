@@ -17,12 +17,12 @@ export const useMemoActions = ({
   setError,
   setEditingMemoId,
 }: UseMemoActionsProps) => {
-  // 新規メモ作成
+  // 新規作成
   const handleCreate = useCallback(
     async (
       title: string,
       content: string,
-      category?: string,
+      category: string,
       attachments: MemoPayload["attachments"] = [],
     ) => {
       setLoading(true);
@@ -35,12 +35,11 @@ export const useMemoActions = ({
           category,
           attachments,
         });
-
         await loadMemos();
         toast.success("メモを作成しました！");
       } catch (err: unknown) {
         const message =
-          err instanceof Error ? err.message : "メモ作成中にエラーが発生しました。";
+          err instanceof Error ? err.message : "メモの作成に失敗しました";
         console.error("メモ作成エラー:", err);
         toast.error(message);
         setError(message);
@@ -51,37 +50,34 @@ export const useMemoActions = ({
     [loadMemos, setLoading, setError],
   );
 
-  // メモ更新
+  // 更新（部分更新対応）
   const handleUpdate = useCallback(
     async (
       id: string,
-      title: string,
-      content: string,
-      category?: string,
-      attachments?: MemoPayload["attachments"],
+      updates: Partial<
+        Pick<
+          Memo,
+          | "title"
+          | "content"
+          | "category"
+          | "attachments"
+          | "isDone"
+          | "isPinned"
+        >
+      >,
     ) => {
       setLoading(true);
       setError(null);
 
       try {
-        const payload: Partial<MemoPayload> = {
-          title,
-          content,
-          category,
-        };
-
-        if (attachments !== undefined) {
-          payload.attachments = attachments;
-        }
-
-        await updateMemo(id, payload as MemoPayload);
-
+        // サーバー側が部分更新を許容している前提でそのまま送信
+        await updateMemo(id, updates as MemoPayload);
         await loadMemos();
         setEditingMemoId?.(null);
         toast.success("メモを更新しました！");
       } catch (err: unknown) {
         const message =
-          err instanceof Error ? err.message : "メモ更新中にエラーが発生しました。";
+          err instanceof Error ? err.message : "メモの更新に失敗しました";
         console.error("メモ更新エラー:", err);
         toast.error(message);
         setError(message);
@@ -92,7 +88,7 @@ export const useMemoActions = ({
     [loadMemos, setLoading, setError, setEditingMemoId],
   );
 
-  // 削除（ゴミ箱へ）
+  // 削除（ゴミ箱へ移動）
   const handleDelete = useCallback(
     async (id: string) => {
       setLoading(true);
@@ -100,12 +96,11 @@ export const useMemoActions = ({
 
       try {
         await deleteMemo(id);
-
         await loadMemos();
-        toast.success("メモをゴミ箱に移動しました。");
+        toast.success("メモをゴミ箱に移動しました");
       } catch (err: unknown) {
         const message =
-          err instanceof Error ? err.message : "メモ削除中にエラーが発生しました。";
+          err instanceof Error ? err.message : "メモの削除に失敗しました";
         console.error("メモ削除エラー:", err);
         toast.error(message);
         setError(message);
@@ -124,16 +119,13 @@ export const useMemoActions = ({
 
       try {
         await updateMemo(memo._id, {
-          title: memo.title,
-          content: memo.content,
           isDone: !memo.isDone,
         } as MemoPayload);
-
         await loadMemos();
       } catch (err: unknown) {
         const message =
-          err instanceof Error ? err.message : "完了状態の更新中にエラーが発生しました。";
-        console.error("完了切り替えエラー:", err);
+          err instanceof Error ? err.message : "完了状態の更新に失敗しました";
+        console.error("完了トグルエラー:", err);
         toast.error(message);
         setError(message);
       } finally {
@@ -153,18 +145,19 @@ export const useMemoActions = ({
         await updateMemo(memo._id, {
           isPinned: !memo.isPinned,
         } as MemoPayload);
-
         await loadMemos();
       } catch (err: unknown) {
         const message =
-          err instanceof Error ? err.message : "ピン状態の更新中にエラーが発生しました。";
-        console.error("ピン切り替えエラー:", err);
+          err instanceof Error
+            ? err.message
+            : "ピン留め状態の更新に失敗しました";
+        console.error("ピントグルエラー:", err);
         toast.error(message);
       } finally {
         setLoading(false);
       }
     },
-    [loadMemos, setLoading],
+    [loadMemos, setLoading, setError],
   );
 
   return {

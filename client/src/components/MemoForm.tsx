@@ -1,84 +1,116 @@
-// src/components/MemoForm.jsx
-import React, { useState } from "react";
+// src/components/MemoForm.tsx
+import React, { useState, ChangeEvent } from "react";
 import { toast } from "react-hot-toast";
-import { uploadFile } from "../hooks/utils/uploadFile";
-import { Plus, X, Image, FileText, Loader2, Send } from "lucide-react";
+import { uploadFile } from "../hooks/utils/uploadFile"; // エイリアスが使えない場合は相対パスに変更
+import { Plus, X, Image as ImageIcon, FileText, Loader2, Send } from "lucide-react";
+import type { Attachment } from "@/types/api";
 
-const MemoForm = ({ loading, onCreate }) => {
+interface MemoFormProps {
+  loading: boolean;
+  onCreate: (
+    title: string,
+    content: string,
+    category: string,
+    attachments: Attachment[]
+  ) => Promise<void>;
+}
+
+interface PreviewItem {
+  type: "image" | "pdf";
+  src?: string;           // image のみ
+  name: string;
+  file: File;
+}
+
+const MemoForm: React.FC<MemoFormProps> = ({ loading, onCreate }) => {
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [newCategory, setNewCategory] = useState("");
-  const [files, setFiles] = useState([]); // ← ここにFileオブジェクトをそのまま保持
-  const [previews, setPreviews] = useState([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<PreviewItem[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
     if (selectedFiles.length === 0) return;
 
-    const newPreviews = [];
+    const newPreviews: PreviewItem[] = [];
+    let processed = 0;
+
     selectedFiles.forEach((file) => {
       if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = () => {
           newPreviews.push({
             type: "image",
-            src: reader.result,
+            src: reader.result as string,
             name: file.name,
-            file, // ← ここで元のFileオブジェクトを保持
+            file,
           });
-          if (newPreviews.length === selectedFiles.length) {
-            setFiles(selectedFiles); // ← 元のFileオブジェクトをそのまま保存
-            setPreviews(newPreviews);
+          processed++;
+          if (processed === selectedFiles.length) {
+            setFiles((prev) => [...prev, ...selectedFiles]);
+            setPreviews((prev) => [...prev, ...newPreviews]);
           }
         };
         reader.readAsDataURL(file);
       } else if (file.type === "application/pdf") {
-        newPreviews.push({ type: "pdf", name: file.name, file });
-        setFiles(selectedFiles);
-        setPreviews((prev) => [...prev, ...newPreviews]);
+        newPreviews.push({
+          type: "pdf",
+          name: file.name,
+          file,
+        });
+        processed++;
+        if (processed === selectedFiles.length) {
+          setFiles((prev) => [...prev, ...selectedFiles]);
+          setPreviews((prev) => [...prev, ...newPreviews]);
+        }
       } else {
         toast.error(`「${file.name}」は画像またはPDFのみ対応しています`);
       }
     });
   };
 
-  const handleRemoveFile = (index) => {
-    setFiles(files.filter((_, i) => i !== index));
-    setPreviews(previews.filter((_, i) => i !== index));
+  const handleRemoveFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
-    if (!newTitle.trim()) return toast.error("タイトルを入力してください");
-    if (!newContent.trim()) return toast.error("内容を入力してください");
+    const trimmedTitle = newTitle.trim();
+    const trimmedContent = newContent.trim();
+
+    if (!trimmedTitle) return toast.error("タイトルを入力してください");
+    if (!trimmedContent) return toast.error("内容を入力してください");
     if (!newCategory) return toast.error("カテゴリを選択してください");
 
     try {
       setUploading(true);
 
-      // files は元のFileオブジェクトの配列 → そのままuploadFileに渡せる！
-      const fileUrls =
-        files.length > 0
-          ? await Promise.all(files.map((file) => uploadFile(file)))
-          : [];
+      // 複数ファイルを並列アップロード（uploadFile.ts の単一関数を使用）
+      const fileUrls = await Promise.all(
+        files.map((file) => uploadFile(file, "memos")) // "memos" フォルダに保存例
+      );
 
-      const attachments = fileUrls.map((url, i) => ({
+      const attachments: Attachment[] = fileUrls.map((url, i) => ({
         url,
         name: files[i].name,
         type: files[i].type,
       }));
 
-      await onCreate(newTitle, newContent, newCategory, attachments);
+      await onCreate(trimmedTitle, trimmedContent, newCategory, attachments);
 
-      // 成功したらリセット
+      // 成功したらフォームリセット
       setNewTitle("");
       setNewContent("");
       setNewCategory("");
       setFiles([]);
       setPreviews([]);
-    } catch (err) {
+      toast.success("メモを作成しました！");
+    } catch (err: unknown) {
       console.error("メモ作成エラー:", err);
-      toast.error("メモの作成に失敗しました");
+      const message = err instanceof Error ? err.message : "作成に失敗しました";
+      toast.error(message);
     } finally {
       setUploading(false);
     }
@@ -140,7 +172,7 @@ const MemoForm = ({ loading, onCreate }) => {
               className="hidden"
             />
             <div className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all font-medium text-gray-700 dark:text-gray-300">
-              <Image className="w-5 h-5" />
+              <ImageIcon className="w-5 h-5" />
               画像・PDFを追加
             </div>
           </label>

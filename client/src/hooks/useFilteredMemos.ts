@@ -1,9 +1,7 @@
 // src/hooks/useFilteredMemos.ts
 import { useMemo } from "react";
 import type { Memo } from "@/types/api";
-import { sortMemos } from "./utils/sortMemos";  // ← 既存のまま想定（後で型付け推奨）
-
-type SortOrder = "newest" | "oldest" | "priority";
+import { sortMemos, type SortOrder } from "./utils/sortMemos";
 
 export const useFilteredMemos = (
   memos: Memo[],
@@ -11,12 +9,19 @@ export const useFilteredMemos = (
   filterCategory: string,
   sortOrder: SortOrder,
 ) => {
-  // 検索 + カテゴリフィルタ
+  // フィルタリング部分（検索 + カテゴリ）
   const filteredMemos = useMemo(() => {
+    // 両方空ならフィルタ不要 → 元の配列をそのまま返す（参照コスト削減）
+    if (!searchQuery.trim() && !filterCategory) {
+      return memos;
+    }
+
+    const lowerSearch = searchQuery.toLowerCase().trim();
+
     return memos.filter((memo) => {
       const matchesSearch =
-        memo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        memo.content.toLowerCase().includes(searchQuery.toLowerCase());
+        memo.title.toLowerCase().includes(lowerSearch) ||
+        memo.content.toLowerCase().includes(lowerSearch);
 
       const matchesCategory = filterCategory
         ? memo.category === filterCategory
@@ -26,10 +31,13 @@ export const useFilteredMemos = (
     });
   }, [memos, searchQuery, filterCategory]);
 
-  // ソート適用
+  // ソート適用（filteredMemosが変わったときだけ再計算）
   const sortedAndFilteredMemos = useMemo(() => {
     return sortMemos(filteredMemos, sortOrder);
   }, [filteredMemos, sortOrder]);
 
-  return { filteredMemos, sortedAndFilteredMemos };
+  return {
+    filteredMemos,
+    sortedAndFilteredMemos,
+  };
 };

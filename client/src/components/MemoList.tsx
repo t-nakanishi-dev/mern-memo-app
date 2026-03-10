@@ -13,11 +13,10 @@ import { useMemoActions } from "../hooks/useMemoActions";
 import { useFilteredMemos } from "../hooks/useFilteredMemos";
 import { Search, Sparkles, PlusCircle, Loader2, Package } from "lucide-react";
 import { Memo } from "@/types/api"; // これでOKになるはず
+import type { SortOrder } from "@/hooks/utils/sortMemos";
 
 const MemoList: React.FC = () => {
-  const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "priority">(
-    "newest",
-  );
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filterCategory, setFilterCategory] = useState<string>("");
   const [page, setPage] = useState<number>(1);
