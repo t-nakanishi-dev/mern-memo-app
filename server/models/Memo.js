@@ -18,15 +18,16 @@ const memoSchema = new mongoose.Schema(
 
     attachments: [
       {
-        _id: { type: mongoose.Schema.Types.ObjectId, auto: true }, 
+        _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
         url: { type: String, required: true },
+        path: { type: String }, // ←追加
         name: { type: String, required: true },
         type: { type: String, required: true },
-        uploadedAt: { type: Date, default: Date.now }, 
+        uploadedAt: { type: Date, default: Date.now },
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Memo", memoSchema);

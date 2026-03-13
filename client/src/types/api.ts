@@ -20,6 +20,7 @@ export type AuthResponse = {
 export type Attachment = {
   _id?: string; // MongoDBのObjectIdの場合
   url: string;
+  path?: string; // ←追加（重要）
   name: string;
   type: string; // MIME type e.g. "image/jpeg", "application/pdf"
   size?: number; // 任意：バイトサイズ
@@ -61,4 +62,3 @@ export interface PagedMemosResponse {
   memos: Memo[];
   total: number;
 }
-

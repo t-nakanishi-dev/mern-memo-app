@@ -15,30 +15,28 @@ import type { Attachment } from "@/types/api";
 export async function uploadFile(
   file: File,
   folder: string = "uploads",
-  prefix: string = ""
-): Promise<string> {
-  if (!file) {
-    throw new Error("ファイルが指定されていません");
-  }
-
+  prefix: string = "",
+): Promise<{ url: string; path: string }> {
   const safeFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+
   const pathSegments = [folder];
+
   if (prefix) pathSegments.push(prefix);
+
   pathSegments.push(safeFileName);
 
   const storagePath = pathSegments.join("/");
+
   const storageRef = ref(storage, storagePath);
 
-  try {
-    const snapshot = await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(snapshot.ref);
-    return url;
-  } catch (error: unknown) {
-    console.error("Firebase Storage アップロードエラー:", error);
-    const message =
-      error instanceof Error ? error.message : "ファイルアップロードに失敗しました";
-    throw new Error(message);
-  }
+  const snapshot = await uploadBytes(storageRef, file);
+
+  const url = await getDownloadURL(snapshot.ref);
+
+  return {
+    url,
+    path: storagePath,
+  };
 }
 
 /**
@@ -53,20 +51,18 @@ export async function uploadFile(
 export async function uploadMultipleFiles(
   files: File[],
   folder: string = "uploads",
-  prefix: string = ""
+  prefix: string = "",
 ): Promise<Attachment[]> {
   if (files.length === 0) return [];
 
-  const promises = files.map(async (file) => {
-    const url = await uploadFile(file, folder, prefix);
-    return {
-      url,
-      name: file.name,
-      type: file.type,
-      // size: file.size,               // 必要なら追加
-      // uploadedAt: new Date().toISOString(), // クライアント側で付与する場合
-    } satisfies Attachment;
-  });
+  const results = await Promise.all(
+    files.map((file) => uploadFile(file, folder, prefix)),
+  );
 
-  return Promise.all(promises);
+  return results.map((r, i) => ({
+    url: r.url,
+    path: r.path,
+    name: files[i].name,
+    type: files[i].type,
+  }));
 }

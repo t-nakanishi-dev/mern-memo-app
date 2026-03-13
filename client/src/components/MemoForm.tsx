@@ -1,8 +1,15 @@
 // src/components/MemoForm.tsx
 import React, { useState, ChangeEvent } from "react";
 import { toast } from "react-hot-toast";
-import { uploadFile } from "../hooks/utils/uploadFile"; // エイリアスが使えない場合は相対パスに変更
-import { Plus, X, Image as ImageIcon, FileText, Loader2, Send } from "lucide-react";
+import { uploadMultipleFiles } from "../hooks/utils/uploadFile"; // エイリアスが使えない場合は相対パスに変更
+import {
+  Plus,
+  X,
+  Image as ImageIcon,
+  FileText,
+  Loader2,
+  Send,
+} from "lucide-react";
 import type { Attachment } from "@/types/api";
 
 interface MemoFormProps {
@@ -11,13 +18,13 @@ interface MemoFormProps {
     title: string,
     content: string,
     category: string,
-    attachments: Attachment[]
+    attachments: Attachment[],
   ) => Promise<void>;
 }
 
 interface PreviewItem {
   type: "image" | "pdf";
-  src?: string;           // image のみ
+  src?: string; // image のみ
   name: string;
   file: File;
 }
@@ -88,15 +95,7 @@ const MemoForm: React.FC<MemoFormProps> = ({ loading, onCreate }) => {
       setUploading(true);
 
       // 複数ファイルを並列アップロード（uploadFile.ts の単一関数を使用）
-      const fileUrls = await Promise.all(
-        files.map((file) => uploadFile(file, "memos")) // "memos" フォルダに保存例
-      );
-
-      const attachments: Attachment[] = fileUrls.map((url, i) => ({
-        url,
-        name: files[i].name,
-        type: files[i].type,
-      }));
+      const attachments = await uploadMultipleFiles(files, "memos");
 
       await onCreate(trimmedTitle, trimmedContent, newCategory, attachments);
 
