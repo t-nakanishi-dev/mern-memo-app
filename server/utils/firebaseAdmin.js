@@ -1,12 +1,34 @@
 // server/utils/firebaseAdmin.js
+
 const admin = require("firebase-admin");
 
-const serviceAccount = require("../firebaseServiceAccount.json");
+// =======================================
+// 環境変数チェック
+// =======================================
+if (!process.env.SERVICE_ACCOUNT_KEY_BASE64) {
+  throw new Error("SERVICE_ACCOUNT_KEY_BASE64 is not set");
+}
 
+if (!process.env.FIREBASE_STORAGE_BUCKET) {
+  throw new Error("FIREBASE_STORAGE_BUCKET is not set");
+}
+
+// =======================================
+// Base64 → JSON
+// =======================================
+const serviceAccount = JSON.parse(
+  Buffer.from(process.env.SERVICE_ACCOUNT_KEY_BASE64, "base64").toString(
+    "utf-8",
+  ),
+);
+
+// =======================================
+// Firebase初期化
+// =======================================
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    storageBucket: `${serviceAccount.project_id}.appspot.com`,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 }
 

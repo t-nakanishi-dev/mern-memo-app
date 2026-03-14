@@ -89,8 +89,8 @@ const MemoDetail = () => {
         currentFiles.length > 0
           ? await Promise.all(
               currentFiles.map(async (file) => {
-                const url = await uploadFile(file, "memos");
-                return { url, name: file.name, type: file.type };
+                const { url, path } = await uploadFile(file, "memos");
+                return { url, path, name: file.name, type: file.type };
               }),
             )
           : [];
@@ -99,6 +99,7 @@ const MemoDetail = () => {
         ...existingAttachments.map((f) => ({
           _id: f._id,
           url: f.url,
+          path: f.path, // ← これ追加
           name: f.name,
           type: f.type,
         })),

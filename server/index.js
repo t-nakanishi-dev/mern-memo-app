@@ -1,4 +1,6 @@
 // server/index.js
+require("dotenv").config(); 
+
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -7,7 +9,6 @@ const memoRoutes = require("./routes/memos");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const cookieParser = require("cookie-parser");
-require("dotenv").config(); 
 
 // ============================================
 // dotenv 設定
