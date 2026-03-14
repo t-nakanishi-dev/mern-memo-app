@@ -1,6 +1,7 @@
 // server/routes/memo.js
 const express = require("express");
 const verifyToken = require("../middleware/verifyToken");
+const validateAttachments = require("../middleware/validateAttachments");
 const Memo = require("../models/Memo");
 const { memoCreateSchema } = require("../schemas/memoSchema");
 const { bucket } = require("../utils/firebaseAdmin");
@@ -59,7 +60,7 @@ router.get("/", verifyToken, async (req, res) => {
 // POST /api/memos
 // メモ作成（Zodバリデーション版）
 // =======================================
-router.post("/", verifyToken, async (req, res) => {
+router.post("/", verifyToken, validateAttachments, async (req, res) => {
   try {
     // 🔹 attachments が文字列で来た場合の救済（現状維持）
     if (typeof req.body.attachments === "string") {
@@ -192,7 +193,7 @@ router.get("/:id", verifyToken, async (req, res) => {
 // PUT /api/memos/:id
 // 特定のメモを更新（孤児ファイル対策あり）
 // =======================================
-router.put("/:id", verifyToken, async (req, res) => {
+router.put("/:id", verifyToken, validateAttachments, async (req, res) => {
   try {
     const { title, content, category, isDone, isPinned, attachments } =
       req.body;

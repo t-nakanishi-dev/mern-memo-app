@@ -91,15 +91,36 @@ const MemoForm: React.FC<MemoFormProps> = ({ loading, onCreate }) => {
     if (!trimmedContent) return toast.error("内容を入力してください");
     if (!newCategory) return toast.error("カテゴリを選択してください");
 
+    setUploading(true);
+
+    let attachments: Attachment[] = [];
+
+    // =========================
+    // ① upload
+    // =========================
+
     try {
-      setUploading(true);
+      attachments = await uploadMultipleFiles(files, "memos");
+    } catch (err: unknown) {
+      console.error("アップロードエラー:", err);
 
-      // 複数ファイルを並列アップロード（uploadFile.ts の単一関数を使用）
-      const attachments = await uploadMultipleFiles(files, "memos");
+      const message =
+        err instanceof Error
+          ? err.message
+          : "ファイルのアップロードに失敗しました";
 
+      toast.error(message);
+      setUploading(false);
+      return;
+    }
+
+    // =========================
+    // ② create
+    // =========================
+
+    try {
       await onCreate(trimmedTitle, trimmedContent, newCategory, attachments);
 
-      // 成功したらフォームリセット
       setNewTitle("");
       setNewContent("");
       setNewCategory("");
@@ -107,7 +128,10 @@ const MemoForm: React.FC<MemoFormProps> = ({ loading, onCreate }) => {
       setPreviews([]);
     } catch (err: unknown) {
       console.error("メモ作成エラー:", err);
-      const message = err instanceof Error ? err.message : "作成に失敗しました";
+
+      const message =
+        err instanceof Error ? err.message : "メモの作成に失敗しました";
+
       toast.error(message);
     } finally {
       setUploading(false);

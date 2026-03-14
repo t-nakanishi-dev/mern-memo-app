@@ -20,9 +20,10 @@ const memoSchema = new mongoose.Schema(
       {
         _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
         url: { type: String, required: true },
-        path: { type: String }, // ←追加
+        path: { type: String, required: true },
         name: { type: String, required: true },
         type: { type: String, required: true },
+        size: { type: Number, required: true },
         uploadedAt: { type: Date, default: Date.now },
       },
     ],

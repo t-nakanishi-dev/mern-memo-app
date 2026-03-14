@@ -64,5 +64,6 @@ export async function uploadMultipleFiles(
     path: r.path,
     name: files[i].name,
     type: files[i].type,
+    size: files[i].size ?? 0,
   }));
 }
