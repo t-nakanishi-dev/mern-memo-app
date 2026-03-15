@@ -9,22 +9,58 @@ const { bucket } = require("../utils/firebaseAdmin");
 const router = express.Router();
 
 // =======================================
-// Firebase Storageファイル削除
+// Firebase Storageファイル削除（ログ強化版）
 // =======================================
 async function deleteAttachmentsFromStorage(attachments = []) {
-  if (!Array.isArray(attachments) || attachments.length === 0) return;
+  if (!Array.isArray(attachments) || attachments.length === 0) {
+    console.log("削除対象の添付ファイルがありません");
+    return;
+  }
 
-  for (const file of attachments) {
-    try {
-      if (file?.path) {
-        await bucket.file(file.path).delete();
-      }
-    } catch (err) {
-      console.error("Storage削除失敗:", {
-        path: file?.path,
-        error: err.message,
-      });
+  console.log(`Storage削除対象ファイル数: ${attachments.length}`);
+
+  const deletePromises = attachments.map(async (file) => {
+    if (!file?.path) {
+      console.warn("pathが空の添付ファイルが存在します", { file });
+      return;
     }
+
+    try {
+      console.log(`削除試行: ${file.path}`);
+      await bucket.file(file.path).delete();
+      console.log(`削除成功: ${file.path}`);
+    } catch (err) {
+      if (err.code === 404) {
+        // 既に存在しない場合は警告レベル（エラーではない）
+        console.warn(
+          `ファイルが見つかりません（既に削除済み？）: ${file.path}`,
+        );
+      } else if (err.code === 403) {
+        console.error(`権限エラー（403）: ${file.path}`, {
+          code: err.code,
+          message: err.message,
+        });
+      } else {
+        console.error(`Storage削除エラー: ${file.path}`, {
+          code: err.code || "不明",
+          message: err.message,
+          stack: err.stack ? err.stack.substring(0, 300) : undefined,
+        });
+      }
+    }
+  });
+
+  // すべて実行し、1つ失敗しても全体を止めない
+  const results = await Promise.allSettled(deletePromises);
+
+  // 失敗したものがあればサマリーを出す
+  const failed = results.filter((r) => r.status === "rejected");
+  if (failed.length > 0) {
+    console.warn(
+      `Storage削除で失敗したファイル数: ${failed.length} / ${attachments.length}`,
+    );
+  } else {
+    console.log("すべてのStorageファイル削除を試行完了（成功または404）");
   }
 }
 
@@ -33,17 +69,15 @@ async function deleteAttachmentsFromStorage(attachments = []) {
 // メモ一覧を取得（削除されていないもののみ）
 // =======================================
 router.get("/", verifyToken, async (req, res) => {
-  const page = parseInt(req.query.page) || 1; // ページ番号（デフォルト1）
+  const page = parseInt(req.query.page) || 1;
   const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 12;
 
   try {
-    // 認証済みユーザーのメモを検索（削除されていないもの）
     const memos = await Memo.find({ userId: req.user.userId, isDeleted: false })
-      .sort({ updatedAt: -1 }) // 更新日時の降順
-      .skip((page - 1) * limit) // ページング用スキップ
-      .limit(limit); // 最大件数制限
+      .sort({ updatedAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
 
-    // 総件数を取得（ページング用）
     const total = await Memo.countDocuments({
       userId: req.user.userId,
       isDeleted: false,
@@ -58,11 +92,9 @@ router.get("/", verifyToken, async (req, res) => {
 
 // =======================================
 // POST /api/memos
-// メモ作成（Zodバリデーション版）
 // =======================================
 router.post("/", verifyToken, validateAttachments, async (req, res) => {
   try {
-    // 🔹 attachments が文字列で来た場合の救済（現状維持）
     if (typeof req.body.attachments === "string") {
       try {
         req.body.attachments = JSON.parse(req.body.attachments);
@@ -71,7 +103,6 @@ router.post("/", verifyToken, validateAttachments, async (req, res) => {
       }
     }
 
-    // 🔥 Zod バリデーション（ここが面談評価ポイント）
     const parsed = memoCreateSchema.safeParse(req.body);
 
     if (!parsed.success) {
@@ -81,10 +112,8 @@ router.post("/", verifyToken, validateAttachments, async (req, res) => {
       });
     }
 
-    // 🔹 型安全に取り出し
     const { title, content, category, attachments } = parsed.data;
 
-    // 🔹 新しいメモ作成
     const newMemo = new Memo({
       userId: req.user.userId,
       title,
@@ -106,7 +135,6 @@ router.post("/", verifyToken, validateAttachments, async (req, res) => {
 
 // =======================================
 // GET /api/memos/trash
-// ゴミ箱にあるメモ一覧を取得
 // =======================================
 router.get("/trash", verifyToken, async (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -115,7 +143,7 @@ router.get("/trash", verifyToken, async (req, res) => {
   try {
     const trashedMemos = await Memo.find({
       userId: req.user.userId,
-      isDeleted: true, // 論理削除済みのメモのみ
+      isDeleted: true,
     })
       .sort({ updatedAt: -1 })
       .skip((page - 1) * limit)
@@ -144,7 +172,9 @@ router.delete("/trash", verifyToken, async (req, res) => {
       isDeleted: true,
     });
 
-    // 🔥 Storage削除
+    console.log(`ゴミ箱完全削除対象メモ件数: ${trashedMemos.length}`);
+
+    // Storage削除（ログ強化済み関数を使用）
     for (const memo of trashedMemos) {
       await deleteAttachmentsFromStorage(memo.attachments);
     }
@@ -165,7 +195,6 @@ router.delete("/trash", verifyToken, async (req, res) => {
 
 // =======================================
 // GET /api/memos/:id
-// 特定のメモを取得
 // =======================================
 router.get("/:id", verifyToken, async (req, res) => {
   try {
@@ -191,7 +220,6 @@ router.get("/:id", verifyToken, async (req, res) => {
 
 // =======================================
 // PUT /api/memos/:id
-// 特定のメモを更新（孤児ファイル対策あり）
 // =======================================
 router.put("/:id", verifyToken, validateAttachments, async (req, res) => {
   try {
@@ -215,9 +243,6 @@ router.put("/:id", verifyToken, validateAttachments, async (req, res) => {
     if (isDone !== undefined) updateFields.isDone = isDone;
     if (isPinned !== undefined) updateFields.isPinned = isPinned;
 
-    // =======================================
-    // 🔥 attachments差分削除（孤児対策）
-    // =======================================
     if (attachments !== undefined) {
       const oldAttachments = memo.attachments || [];
       const newAttachments = attachments || [];
@@ -228,7 +253,6 @@ router.put("/:id", verifyToken, validateAttachments, async (req, res) => {
         (file) => file?.path && !newPaths.has(file.path),
       );
 
-      // attachments更新
       updateFields.attachments = newAttachments;
 
       const updatedMemo = await Memo.findOneAndUpdate(
@@ -237,15 +261,12 @@ router.put("/:id", verifyToken, validateAttachments, async (req, res) => {
         { new: true },
       );
 
-      // DB更新成功後にStorage削除
+      // 孤児ファイル削除（ログ強化済み）
       await deleteAttachmentsFromStorage(removedFiles);
 
       return res.json(updatedMemo);
     }
 
-    // =======================================
-    // attachmentsが送られていない場合の通常更新
-    // =======================================
     if (Object.keys(updateFields).length === 0) {
       return res.status(400).json({ message: "更新する内容がありません" });
     }
@@ -269,21 +290,22 @@ router.put("/:id", verifyToken, validateAttachments, async (req, res) => {
 });
 
 // =======================================
-// DELETE /api/memos/:id
-// 特定のメモをゴミ箱に移動（論理削除）
+// DELETE /api/memos/:id （論理削除）
 // =======================================
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
     const deletedMemo = await Memo.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.userId },
-      { isDeleted: true }, // 論理削除
+      { isDeleted: true },
       { new: true },
     );
+
     if (!deletedMemo) {
       return res.status(404).json({
         message: "メモが見つかりません、または削除する権限がありません。",
       });
     }
+
     res.json({ message: "メモをゴミ箱に移動しました。" });
   } catch (err) {
     console.error("メモ削除エラー:", err);
@@ -295,13 +317,12 @@ router.delete("/:id", verifyToken, async (req, res) => {
 
 // =======================================
 // PUT /api/memos/:id/restore
-// ゴミ箱からメモを復元
 // =======================================
 router.put("/:id/restore", verifyToken, async (req, res) => {
   try {
     const restoredMemo = await Memo.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.userId },
-      { isDeleted: false }, // ゴミ箱から復元
+      { isDeleted: false },
       { new: true },
     );
 
@@ -316,8 +337,7 @@ router.put("/:id/restore", verifyToken, async (req, res) => {
 });
 
 // =======================================
-// DELETE /api/memos/:id/permanent
-// ゴミ箱にあるメモを完全削除
+// DELETE /api/memos/:id/permanent （完全削除）
 // =======================================
 router.delete("/:id/permanent", verifyToken, async (req, res) => {
   try {
@@ -334,10 +354,9 @@ router.delete("/:id/permanent", verifyToken, async (req, res) => {
       });
     }
 
-    // 🔥 Storage削除
+    // Storage削除（ログ強化済み）
     await deleteAttachmentsFromStorage(memo.attachments);
 
-    // 🔥 DB削除
     await Memo.deleteOne({ _id: memo._id });
 
     res.json({ message: "メモを完全に削除しました。" });
