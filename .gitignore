@@ -8,6 +8,7 @@ server/node_modules/
 .env.local
 
 firebaseServiceAccount.json
+full_base64_key.txt
 
 # Build output
 build/
