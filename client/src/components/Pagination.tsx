@@ -1,7 +1,13 @@
-// client/src/components/Pagination.jsx
+// client/src/components/Pagination.tsx
 import React from "react";
 
-const Pagination = ({ page, totalPages, onPageChange }) => {
+interface PaginationProps {
+  page: number;
+  totalPages: number;
+  onPageChange: (newPage: number) => void;
+}
+
+const Pagination = ({ page, totalPages, onPageChange }: PaginationProps) => {
   return (
     <div className="flex justify-between items-center mt-6">
       <button
