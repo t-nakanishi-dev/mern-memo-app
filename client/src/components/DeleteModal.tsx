@@ -1,4 +1,4 @@
-// client/src/components/DeleteModal.jsx
+// client/src/components/DeleteModal.tsx
 import React from "react";
 
 /**
@@ -11,7 +11,13 @@ import React from "react";
  * - onConfirm: function - 「削除する」ボタンを押したときの処理
  * - onCancel: function - 「キャンセル」ボタンを押したときの処理
  */
-const DeleteModal = ({ isOpen, onConfirm, onCancel }) => {
+interface DeleteModalProps {
+  isOpen: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+const DeleteModal = ({ isOpen, onConfirm, onCancel }: DeleteModalProps) => {
   // モーダルが開いていなければ何も表示しない
   if (!isOpen) return null;
 
