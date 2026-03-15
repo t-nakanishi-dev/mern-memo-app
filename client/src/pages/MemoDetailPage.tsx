@@ -1,32 +1,25 @@
-// client/src/pages/MemoDetailPage.jsx
+// client/src/pages/MemoDetailPage.tsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchMemo } from "../api";
 import MemoDetail from "../components/MemoDetail";
+import type { Memo } from "@/types/api";
 
 const MemoDetailPage = () => {
-  // URLパラメータからメモIDを取得（例: /memo/123 → id = 123）
-  const { id } = useParams();
-
-  // ページ遷移用フック
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // メモの詳細データを保持
-  const [memo, setMemo] = useState(null);
+  const [memo, setMemo] = useState<Memo | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // エラーメッセージを保持
-  const [error, setError] = useState(null);
-
-  // コンポーネントがマウントされたとき or id/token が変化したときに実行
   useEffect(() => {
     const getMemo = async () => {
       try {
-        // ✅ apiFetch は JSON を返す
-        const data = await fetchMemo(id);
+        const data = await fetchMemo(id!); // id は string | undefined だがルートで存在する前提
         setMemo(data);
-        const res = await fetchMemo(id);
+        const res = await fetchMemo(id!);
         console.log("🔍 memo detail res:", res);
-      } catch (err) {
+      } catch (err: any) {
         setError(err.message || "メモの取得に失敗しました。");
         setTimeout(() => navigate("/"), 2000);
       }
@@ -37,7 +30,6 @@ const MemoDetailPage = () => {
 
   console.log("🧠 memo state:", memo);
 
-  // エラーがある場合の表示
   if (error) {
     return (
       <div className="text-red-500 text-center mt-6 bg-white dark:bg-gray-900 p-4 rounded-md">
@@ -47,7 +39,6 @@ const MemoDetailPage = () => {
     );
   }
 
-  // メモデータがまだ取得できていない場合の読み込み中表示
   if (!memo) {
     return (
       <p className="text-center mt-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 rounded-md">
@@ -56,11 +47,9 @@ const MemoDetailPage = () => {
     );
   }
 
-  // 正常時: メモ詳細を表示
   return (
     <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-6 rounded-md shadow-md">
-      {/* メモ詳細表示用コンポーネント */}
-      <MemoDetail memo={memo} />
+      <MemoDetail />
       <div className="text-center mt-4">
         <button
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
