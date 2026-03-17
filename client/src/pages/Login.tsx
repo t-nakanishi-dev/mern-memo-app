@@ -1,51 +1,53 @@
-// client/src/pages/Login.jsx
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // ページ遷移用のフック
-import { login } from "../api"; // ログインAPI通信関数
+// client/src/pages/Login.tsx
+import React, { useState, FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { login } from "../api";
 import Cookies from "js-cookie";
+import type { AuthResponse } from "@/types/api"; // 既存の型をインポート
 
-const Login = () => {
-  const navigate = useNavigate(); // ページ遷移を制御するためのフック
+const Login: React.FC = () => {
+  const navigate = useNavigate();
 
-  // 入力フォームの状態管理
-  const [email, setEmail] = useState(""); // ユーザーが入力するメールアドレス
-  const [password, setPassword] = useState(""); // ユーザーが入力するパスワード
-  const [error, setError] = useState(null); // エラーメッセージを保持
-  const [loading, setLoading] = useState(false); // ログイン中のローディング状態
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  // フォーム送信時の処理
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // ページリロードを防止
-    setError(null); // 前回のエラーをリセット
-    setLoading(true); // ローディング開始
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
     try {
-      // API呼び出し
       console.log("🚀 login start");
 
-      const data = await login(email, password);
+      const data = await login(email, password) as AuthResponse & {
+        success?: boolean;
+        token?: string;
+        email?: string;
+        message?: string;
+      };
 
       console.log("✅ login response:", data);
 
       if (data.success) {
         // ログイン成功時の処理（Cookie版）
-        Cookies.set("accessToken", data.token, {
-          expires: 7, // 7日間有効
+        Cookies.set("accessToken", data.token!, {
+          expires: 7,
           path: "/",
           sameSite: "lax",
         });
-        localStorage.setItem("email", data.email); // emailだけは表示用に残す
+        localStorage.setItem("email", data.email!);
 
         navigate("/");
       } else {
         setError(data.message || "ログインに失敗しました。");
       }
-    } catch (err) {
-      // ネットワークエラー（サーバーダウンなど）
+    } catch (err: unknown) {
       console.error("LOGIN ERROR:", err);
-      setError("ネットワークエラーが発生しました。");
+      const message = err instanceof Error ? err.message : "ネットワークエラーが発生しました。";
+      setError(message);
     } finally {
-      // ✅ 成否に関わらずローディング終了
       setLoading(false);
     }
   };
@@ -92,13 +94,13 @@ const Login = () => {
             type="submit"
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-md 
                        transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={loading} // ローディング中はボタンを無効化
+            disabled={loading}
           >
             {loading ? "ログイン中..." : "Log In"}
           </button>
         </form>
 
-        {/* 補助リンク（新規登録・パスワードリセット） */}
+        {/* 補助リンク */}
         <div className="text-sm text-center text-gray-600 dark:text-gray-300 mt-4 transition-colors duration-300">
           <p>
             Don&apos;t have an account?{" "}
