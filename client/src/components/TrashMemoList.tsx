@@ -1,4 +1,4 @@
-// client/src/components/TrashMemoList.jsx
+// client/src/components/TrashMemoList.tsx
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -10,54 +10,70 @@ import {
 import { toast, Toaster } from "react-hot-toast";
 import { ArrowLeft, Trash2, RotateCcw, Package, Loader2 } from "lucide-react";
 import MemoCard from "./MemoCard";
+import { Memo } from "@/types/api";           // 既存の型を流用
+import type { PagedMemosResponse } from "@/types/api";
 
-const TrashMemoList = () => {
+// TrashMemoList 専用のレスポンス型（fetchTrashedMemos が返す想定）
+interface TrashedMemosResponse extends PagedMemosResponse {
+  memos: Memo[];
+  total: number;
+  page: number;
+}
+
+const TrashMemoList: React.FC = () => {
   const navigate = useNavigate();
-  const [memos, setMemos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
+
+  const [memos, setMemos] = useState<Memo[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
   const limit = 12;
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState<number>(0);
 
   const loadTrashedMemos = useCallback(
-    async (pageToLoad = page) => {
+    async (pageToLoad: number = page) => {
       setLoading(true);
       setError(null);
 
       try {
-        const data = await fetchTrashedMemos(pageToLoad, limit);
+        // API が PagedMemosResponse 互換を返す前提
+        const data = (await fetchTrashedMemos(
+          pageToLoad,
+          limit,
+        )) as TrashedMemosResponse;
 
         setMemos(data.memos || []);
         setTotal(data.total || 0);
-        setPage(data.page || 1);
-      } catch (err) {
-        setError(err.message);
-        toast.error(err.message);
+        setPage(data.page || pageToLoad);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "不明なエラー";
+        setError(message);
+        toast.error(message);
       } finally {
         setLoading(false);
       }
     },
     [page, limit],
-  ); // page と limit が変わったら再定義
+  );
 
   useEffect(() => {
     loadTrashedMemos();
-  }, [loadTrashedMemos]); // loadTrashedMemos を依存に追加
+  }, [loadTrashedMemos]);
 
   // 復元
-  const handleRestore = async (id) => {
+  const handleRestore = async (id: string) => {
     try {
       await restoreMemo(id);
       toast.success("メモを復元しました！");
       loadTrashedMemos();
-    } catch (err) {
-      toast.error(err.message || "復元に失敗しました");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "復元に失敗しました";
+      toast.error(message);
     }
   };
 
   // 完全削除
-  const handlePermanentDelete = async (id) => {
+  const handlePermanentDelete = async (id: string) => {
     if (
       !window.confirm("本当に完全に削除しますか？\nこの操作は元に戻せません。")
     )
@@ -67,8 +83,9 @@ const TrashMemoList = () => {
       await permanentlyDeleteMemo(id);
       toast.success("完全に削除しました");
       loadTrashedMemos();
-    } catch (err) {
-      toast.error(err.message || "削除に失敗しました");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "削除に失敗しました";
+      toast.error(message);
     }
   };
 
@@ -87,8 +104,10 @@ const TrashMemoList = () => {
       setMemos([]);
       setTotal(0);
       setPage(1);
-    } catch (err) {
-      toast.error(err.message || "ゴミ箱を空にできませんでした");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "ゴミ箱を空にできませんでした";
+      toast.error(message);
     }
   };
 
@@ -109,7 +128,7 @@ const TrashMemoList = () => {
                 <Package className="w-10 h-10 text-red-500" />
                 ゴミ箱
               </h1>
-              <p className="text-gray1-600 dark:text-gray-400 mt-1">
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {total} 件のメモがゴミ箱に入っています
               </p>
             </div>
@@ -159,10 +178,9 @@ const TrashMemoList = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7">
         {memos.map((memo) => (
           <div key={memo._id} className="relative group">
-            {" "}
-            {/* ← group追加！ */}
             {/* 半透明のダークオーバーレイ（ホバー時のみ） */}
             <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" />
+
             {/* アクションボタン（ホバーで登場＋半透明背景） */}
             <div className="absolute top-4 left-4 z-20 flex gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
               {/* 復元ボタン */}
@@ -183,14 +201,16 @@ const TrashMemoList = () => {
                 <Trash2 className="w-5 h-5" />
               </button>
             </div>
+
             {/* ゴミ箱にあることを示す赤い帯 */}
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-600 to-pink-600 rounded-t-2xl" />
+
             {/* 実際のメモカード */}
             <MemoCard
               memo={memo}
               confirmDelete={() => handlePermanentDelete(memo._id)}
-              handleToggleDone={() => {}}
-              handleTogglePin={() => {}}
+              handleToggleDone={async () => {}}
+              handleTogglePin={async () => {}}
             />
           </div>
         ))}
