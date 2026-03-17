@@ -15,10 +15,9 @@ const MemoDetailPage = () => {
   useEffect(() => {
     const getMemo = async () => {
       try {
-        const data = await fetchMemo(id!); // id は string | undefined だがルートで存在する前提
+        const data = await fetchMemo(id!);
         setMemo(data);
-        const res = await fetchMemo(id!);
-        console.log("🔍 memo detail res:", res);
+        console.log("🔍 memo detail res:", data);
       } catch (err: any) {
         setError(err.message || "メモの取得に失敗しました。");
         setTimeout(() => navigate("/"), 2000);
@@ -27,8 +26,6 @@ const MemoDetailPage = () => {
 
     getMemo();
   }, [id, navigate]);
-
-  console.log("🧠 memo state:", memo);
 
   if (error) {
     return (
@@ -49,7 +46,7 @@ const MemoDetailPage = () => {
 
   return (
     <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-6 rounded-md shadow-md">
-      <MemoDetail />
+      <MemoDetail memo={memo} />
       <div className="text-center mt-4">
         <button
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"

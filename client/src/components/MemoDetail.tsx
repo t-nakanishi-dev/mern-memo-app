@@ -1,5 +1,5 @@
 // client/src/components/MemoDetail.tsx
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { toast } from "react-hot-toast";
@@ -17,51 +17,38 @@ import {
 
 import { apiFetch } from "../apiFetch";
 import { uploadFile } from "../hooks/utils/uploadFile";
-import type { Memo, Attachment } from "@/types/api"; // types/api.ts から Memo と Attachment を import
+import type { Memo, Attachment } from "@/types/api";
 
-const MemoDetail = () => {
-  const { id } = useParams<{ id: string }>(); // useParams にジェネリクスで型指定
+type MemoDetailProps = {
+  memo: Memo;
+};
+
+const MemoDetail = ({ memo: initialMemo }: MemoDetailProps) => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [memo, setMemo] = useState<Memo | null>(null);
+  const [memo, setMemo] = useState<Memo>(initialMemo);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editedTitle, setEditedTitle] = useState<string>("");
-  const [editedContent, setEditedContent] = useState<string>("");
-  const [editedCategory, setEditedCategory] = useState<string>("");
+  const [editedTitle, setEditedTitle] = useState<string>(
+    initialMemo.title || "",
+  );
+  const [editedContent, setEditedContent] = useState<string>(
+    initialMemo.content || "",
+  );
+  const [editedCategory, setEditedCategory] = useState<string>(
+    initialMemo.category || "",
+  );
   const [currentFiles, setCurrentFiles] = useState<File[]>([]);
   const [filePreviews, setFilePreviews] = useState<
     { type: "image" | "pdf"; url: string | null; name: string }[]
   >([]);
   const [existingAttachments, setExistingAttachments] = useState<Attachment[]>(
-    [],
+    initialMemo.attachments || [],
   );
   const [uploading, setUploading] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
 
   const cacheBuster = () => Date.now();
-
-  // fetchMemo を useCallback で安定化
-  const fetchMemo = useCallback(async () => {
-    try {
-      const data = await apiFetch<Memo>(`/api/memos/${id}`);
-      if (!data) return;
-
-      setMemo(data);
-      setEditedTitle(data.title || "");
-      setEditedContent(data.content || "");
-      setEditedCategory(data.category || "");
-      setExistingAttachments(data.attachments || []);
-    } catch (err) {
-      toast.error("メモの取得に失敗しました");
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    fetchMemo();
-  }, [fetchMemo]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -77,7 +64,7 @@ const MemoDetail = () => {
             : null,
           name: file.name,
         }) as const,
-    ); // ← これで type が "image" | "pdf" のリテラル型になる
+    );
 
     setFilePreviews((prev) => [...prev, ...previews]);
   };
@@ -176,16 +163,6 @@ const MemoDetail = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (!memo) return null;
-
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -199,6 +176,7 @@ const MemoDetail = () => {
               <ArrowLeft className="w-6 h-6" />
               <span className="text-lg">戻る</span>
             </button>
+
             <div className="flex items-center gap-4">
               <button
                 onClick={togglePin}
@@ -210,6 +188,7 @@ const MemoDetail = () => {
                   <Pin className="w-6 h-6" />
                 )}
               </button>
+
               <button
                 onClick={handleDelete}
                 className="p-3 bg-red-500/30 hover:bg-red-500/50 rounded-full backdrop-blur-sm transition"
