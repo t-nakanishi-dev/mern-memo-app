@@ -1,40 +1,25 @@
-// client/src/pages/PasswordReset.jsx
-import React, { useState } from "react";
+// client/src/pages/PasswordReset.tsx
+import React, { useState, SubmitEvent } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { passwordReset } from "../api"; // api.js に追加予定の関数
+import { passwordReset } from "../api";
 
-const PasswordReset = () => {
-  // URL のクエリパラメータからリセット用トークンを取得 (?token=xxxxx)
+const PasswordReset: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
-  // ページ遷移用
   const navigate = useNavigate();
 
-  // 入力フォーム用の state
-  const [newPassword, setNewPassword] = useState(""); // 新しいパスワード
-  const [confirmPassword, setConfirmPassword] = useState(""); // 確認用パスワード
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  // フィードバックメッセージ
-  const [error, setError] = useState(null); // エラーメッセージ
-  const [message, setMessage] = useState(null); // 成功メッセージ
-
-  // ローディング状態
-  const [loading, setLoading] = useState(false);
-
-  /**
-   * パスワードリセット処理
-   * - 新しいパスワードと確認用が一致しているかチェック
-   * - API にトークンと新しいパスワードを送信
-   * - 成功時はメッセージを表示し、3秒後にログインページへ遷移
-   * - 失敗時はエラーメッセージを表示
-   */
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault();
     setError(null);
     setMessage(null);
 
-    // パスワード一致チェック
     if (newPassword !== confirmPassword) {
       setError("パスワードが一致しません。");
       return;
@@ -43,20 +28,20 @@ const PasswordReset = () => {
     setLoading(true);
 
     try {
-      await passwordReset(token, newPassword);
+      await passwordReset(token!, newPassword);  // token! で non-null assertion（!token は下で処理）
 
       setMessage("パスワードがリセットされました。ログインしてください。");
       setTimeout(() => {
         navigate("/login");
       }, 3000);
-    } catch (err) {
-      setError(err.message || "リセットに失敗しました。");
+    } catch (err: unknown) {
+      const errMessage = err instanceof Error ? err.message : "リセットに失敗しました。";
+      setError(errMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // トークンがない場合（不正なリンクなど）
   if (!token) {
     return (
       <p className="text-center mt-20 text-red-600">
@@ -65,16 +50,13 @@ const PasswordReset = () => {
     );
   }
 
-  // 通常の表示
   return (
     <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded shadow">
       <h2 className="text-2xl font-bold mb-4">新しいパスワードを設定</h2>
 
-      {/* 成功 or エラーメッセージ */}
       {message && <p className="text-green-600 mb-4">{message}</p>}
       {error && <p className="text-red-600 mb-4">{error}</p>}
 
-      {/* 入力フォーム */}
       <form onSubmit={handleSubmit}>
         <input
           type="password"
