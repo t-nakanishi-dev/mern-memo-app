@@ -62,3 +62,12 @@ export interface PagedMemosResponse {
   memos: Memo[];
   total: number;
 }
+
+/**
+ * プロフィール
+ */
+export type UserProfile = {
+  email: string;
+  createdAt: string;
+  memoCount: number;
+}

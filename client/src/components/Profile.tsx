@@ -1,25 +1,30 @@
-// client/src/components/Profile.jsx 
+// client/src/components/Profile.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetch } from "../apiFetch"; 
+import { apiFetch } from "../apiFetch";
+import { UserProfile } from "@/types/api";
 
-const Profile = () => {
+const Profile: React.FC = () => {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState(null);
-  const [error, setError] = useState(null);
+
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await apiFetch("/api/users/profile"); 
-        if (!res) return;
+        // apiFetch<T> で JSON を直接返す前提
+        const data = await apiFetch<UserProfile>("/api/users/profile");
 
-        if (!res.ok) throw new Error("取得失敗");
-
-        const data = await res.json();
         setProfile(data);
-      } catch (err) {
+      } catch (err: unknown) {
+        console.error("プロフィール取得エラー:", err);
+        const message =
+          err instanceof Error
+            ? err.message
+            : "プロフィール取得に失敗しました。";
         setError("プロフィール取得失敗。ログインし直してください。");
+        // 2秒後にリダイレクト
         setTimeout(() => navigate("/login"), 2000);
       }
     };
@@ -31,7 +36,9 @@ const Profile = () => {
     return <div className="text-red-500 text-center mt-10">{error}</div>;
   }
 
-  if (!profile) return <p className="text-center mt-10">読み込み中...</p>;
+  if (!profile) {
+    return <p className="text-center mt-10">読み込み中...</p>;
+  }
 
   return (
     <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-xl shadow-lg">
@@ -41,14 +48,14 @@ const Profile = () => {
       </p>
       <p>
         <strong>登録日:</strong>{" "}
-        {new Date(profile.createdAt).toLocaleDateString()}
+        {new Date(profile.createdAt).toLocaleDateString("ja-JP")}
       </p>
       <p>
         <strong>メモ数:</strong> {profile.memoCount}
       </p>
       <button
         onClick={() => navigate("/")}
-        className="mt-6 px-6 py- py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
       >
         メモ一覧に戻る
       </button>
