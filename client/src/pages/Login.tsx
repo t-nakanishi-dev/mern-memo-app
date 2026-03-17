@@ -1,5 +1,5 @@
 // client/src/pages/Login.tsx
-import React, { useState, FormEvent } from "react";
+import React, { useState, SubmitEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../api";
 import Cookies from "js-cookie";
@@ -13,7 +13,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
