@@ -1,43 +1,23 @@
-// client/src/components/Profile.jsx
-import React, { useEffect, useState } from "react";
+// client/src/components/Profile.tsx
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetch } from "../apiFetch";
-import { UserProfile } from "@/types/api";
+import { useProfile } from "../hooks/useProfile";
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { profile, loading, error, fetchProfile } = useProfile();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        // apiFetch<T> で JSON を直接返す前提
-        const data = await apiFetch<UserProfile>("/api/users/profile");
-
-        setProfile(data);
-      } catch (err: unknown) {
-        console.error("プロフィール取得エラー:", err);
-        const message =
-          err instanceof Error
-            ? err.message
-            : "プロフィール取得に失敗しました。";
-        setError("プロフィール取得失敗。ログインし直してください。");
-        // 2秒後にリダイレクト
-        setTimeout(() => navigate("/login"), 2000);
-      }
-    };
-
-    fetchProfile();
-  }, [navigate]);
+  if (loading) {
+    return <p className="text-center mt-10">読み込み中...</p>;
+  }
 
   if (error) {
     return <div className="text-red-500 text-center mt-10">{error}</div>;
   }
 
   if (!profile) {
-    return <p className="text-center mt-10">読み込み中...</p>;
+    return <p className="text-center mt-10">データがありません</p>;
   }
 
   return (
@@ -53,6 +33,13 @@ const Profile: React.FC = () => {
       <p>
         <strong>メモ数:</strong> {profile.memoCount}
       </p>
+      <button
+        onClick={fetchProfile}
+        disabled={loading}
+        className="mt-4 px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+      >
+        {loading ? "読み込み中..." : "再取得"}
+      </button>
       <button
         onClick={() => navigate("/")}
         className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

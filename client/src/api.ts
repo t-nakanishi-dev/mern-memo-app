@@ -6,7 +6,8 @@ import type {
   AuthResponse,
   Memo,
   MemoPayload,
-  PagedMemosResponse, // ← 追加
+  PagedMemosResponse,
+  UserProfile,
 } from "./types/api";
 
 /**
@@ -128,4 +129,12 @@ export const passwordReset = async (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token, newPassword }),
   });
+};
+
+/* =============================
+ * プロフィール
+ * ============================= */
+
+export const fetchProfile = async (): Promise<UserProfile> => {
+  return apiFetch<UserProfile>(`${API_BASE_URL}/api/users/profile`);
 };
