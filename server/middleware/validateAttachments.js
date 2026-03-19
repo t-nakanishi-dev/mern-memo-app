@@ -34,6 +34,11 @@ function validateAttachments(req, res, next) {
     for (const file of attachments) {
       if (!file) continue;
 
+      // 🔥 ① 既存ファイルはスキップ
+      if (file._id) continue;
+
+      // 🔥 ② 新規ファイルのみチェック
+
       // MIMEチェック
       if (!ALLOWED_TYPES.includes(file.type)) {
         return res.status(400).json({

@@ -1,11 +1,13 @@
 // server/controllers/memoController.js
 
+const Memo = require("../models/Memo");
+const { memoCreateSchema } = require("../schemas/memoSchema");
+const { deleteAttachmentsFromStorage } = require("../utils/storage");
+
 // =======================================
 // GET /api/memos?page=1&limit=12
 // メモ一覧を取得（削除されていないもののみ）
 // =======================================
-
-const Memo = require("../models/Memo");
 
 exports.getMemos = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -37,8 +39,8 @@ exports.createMemo = async (req, res) => {
     if (typeof req.body.attachments === "string") {
       try {
         req.body.attachments = JSON.parse(req.body.attachments);
-      } catch (e) {
-        console.error("attachments parse error:", e);
+      } catch {
+        return res.status(400).json({ message: "attachmentsの形式が不正です" });
       }
     }
 
@@ -204,24 +206,24 @@ exports.emptyTrash = async (req, res) => {
 // =======================================
 // PUT /api/memos/:id/restore
 // =======================================
-((exports.restoreMemo = verifyToken),
-  async (req, res) => {
-    try {
-      const restoredMemo = await Memo.findOneAndUpdate(
-        { _id: req.params.id, userId: req.user.userId },
-        { isDeleted: false },
-        { new: true },
-      );
+exports.restoreMemo = async (req, res) => {
+  try {
+    const restoredMemo = await Memo.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      { isDeleted: false },
+      { new: true },
+    );
 
-      if (!restoredMemo) {
-        return res.status(404).json({ message: "メモが見つかりません。" });
-      }
-
-      res.json(restoredMemo);
-    } catch (err) {
-      res.status(500).json({ message: "メモの復元に失敗しました。" });
+    if (!restoredMemo) {
+      return res.status(404).json({ message: "メモが見つかりません。" });
     }
-  });
+
+    res.json(restoredMemo);
+  } catch (err) {
+    console.error("メモ復元エラー:", err);
+    res.status(500).json({ message: "メモの復元に失敗しました。" });
+  }
+};
 
 // =======================================
 // DELETE /api/memos/:id/permanent （完全削除）
@@ -250,5 +252,58 @@ exports.permanentDeleteMemo = async (req, res) => {
   } catch (err) {
     console.error("完全削除エラー:", err);
     res.status(500).json({ message: "完全に削除できませんでした。" });
+  }
+};
+
+// =======================================
+// GET /api/memos/trash
+// =======================================
+exports.getTrashedMemos = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 12;
+
+  try {
+    const trashedMemos = await Memo.find({
+      userId: req.user.userId,
+      isDeleted: true,
+    })
+      .sort({ updatedAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const total = await Memo.countDocuments({
+      userId: req.user.userId,
+      isDeleted: true,
+    });
+
+    res.status(200).json({ memos: trashedMemos, total });
+  } catch (err) {
+    console.error("ゴミ箱メモ取得エラー:", err);
+    res.status(500).json({ message: "ゴミ箱の取得に失敗しました。" });
+  }
+};
+
+// =======================================
+// GET /api/memos/:id
+// =======================================
+exports.getMemoById = async (req, res) => {
+  try {
+    const memo = await Memo.findOne({
+      _id: req.params.id,
+      userId: req.user.userId,
+    });
+
+    if (!memo) {
+      return res.status(404).json({
+        message: "メモが見つかりません、または閲覧する権限がありません。",
+      });
+    }
+
+    res.json(memo);
+  } catch (err) {
+    console.error("メモ取得エラー:", err);
+    res
+      .status(500)
+      .json({ message: "メモの取得中にサーバーエラーが発生しました。" });
   }
 };
