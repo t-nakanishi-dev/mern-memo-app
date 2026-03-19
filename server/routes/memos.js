@@ -74,45 +74,7 @@ router.get("/", verifyToken, memoController.getMemos);
 // =======================================
 // POST /api/memos
 // =======================================
-router.post("/", verifyToken, validateAttachments, async (req, res) => {
-  try {
-    if (typeof req.body.attachments === "string") {
-      try {
-        req.body.attachments = JSON.parse(req.body.attachments);
-      } catch (e) {
-        console.error("attachments parse error:", e);
-      }
-    }
-
-    const parsed = memoCreateSchema.safeParse(req.body);
-
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: "入力値が不正です",
-        errors: parsed.error.flatten(),
-      });
-    }
-
-    const { title, content, category, attachments } = parsed.data;
-
-    const newMemo = new Memo({
-      userId: req.user.userId,
-      title,
-      content,
-      category: category || "",
-      attachments: attachments || [],
-    });
-
-    await newMemo.save();
-
-    res.status(201).json(newMemo);
-  } catch (err) {
-    console.error("メモ作成エラー:", err);
-    res
-      .status(500)
-      .json({ message: "メモの作成中にサーバーエラーが発生しました。" });
-  }
-});
+router.post("/", verifyToken, validateAttachments, memoController.createMemo);
 
 // =======================================
 // GET /api/memos/trash
