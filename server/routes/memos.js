@@ -108,33 +108,7 @@ router.get("/trash", verifyToken, async (req, res) => {
 // DELETE /api/memos/trash
 // ゴミ箱を空にする
 // =======================================
-router.delete("/trash", verifyToken, async (req, res) => {
-  try {
-    const trashedMemos = await Memo.find({
-      userId: req.user.userId,
-      isDeleted: true,
-    });
-
-    console.log(`ゴミ箱完全削除対象メモ件数: ${trashedMemos.length}`);
-
-    // Storage削除（ログ強化済み関数を使用）
-    for (const memo of trashedMemos) {
-      await deleteAttachmentsFromStorage(memo.attachments);
-    }
-
-    const result = await Memo.deleteMany({
-      userId: req.user.userId,
-      isDeleted: true,
-    });
-
-    res.json({
-      message: `ゴミ箱を空にしました（${result.deletedCount} 件削除）。`,
-    });
-  } catch (err) {
-    console.error("ゴミ箱完全削除エラー:", err);
-    res.status(500).json({ message: "ゴミ箱の完全削除に失敗しました。" });
-  }
-});
+router.delete("/trash", verifyToken, memoController.emptyTrash);
 
 // =======================================
 // GET /api/memos/:id
@@ -169,78 +143,18 @@ router.put("/:id", verifyToken, validateAttachments, memoController.updateMemo);
 // =======================================
 // DELETE /api/memos/:id （論理削除）
 // =======================================
-router.delete("/:id", verifyToken, async (req, res) => {
-  try {
-    const deletedMemo = await Memo.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.userId },
-      { isDeleted: true },
-      { new: true },
-    );
-
-    if (!deletedMemo) {
-      return res.status(404).json({
-        message: "メモが見つかりません、または削除する権限がありません。",
-      });
-    }
-
-    res.json({ message: "メモをゴミ箱に移動しました。" });
-  } catch (err) {
-    console.error("メモ削除エラー:", err);
-    res
-      .status(500)
-      .json({ message: "メモの削除中にサーバーエラーが発生しました。" });
-  }
-});
+router.delete("/:id", verifyToken, memoController.deleteMemo);
 
 // =======================================
 // PUT /api/memos/:id/restore
 // =======================================
-router.put("/:id/restore", verifyToken, async (req, res) => {
-  try {
-    const restoredMemo = await Memo.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.userId },
-      { isDeleted: false },
-      { new: true },
-    );
-
-    if (!restoredMemo) {
-      return res.status(404).json({ message: "メモが見つかりません。" });
-    }
-
-    res.json(restoredMemo);
-  } catch (err) {
-    res.status(500).json({ message: "メモの復元に失敗しました。" });
-  }
-});
+router.put("/:id/restore", verifyToken, memoController.restoreMemo);
 
 // =======================================
 // DELETE /api/memos/:id/permanent （完全削除）
 // =======================================
-router.delete("/:id/permanent", verifyToken, async (req, res) => {
-  try {
-    const memo = await Memo.findOne({
-      _id: req.params.id,
-      userId: req.user.userId,
-      isDeleted: true,
-    });
-
-    if (!memo) {
-      return res.status(404).json({
-        message:
-          "メモが見つかりません（または既に削除済み、またはゴミ箱にありません）",
-      });
-    }
-
-    // Storage削除（ログ強化済み）
-    await deleteAttachmentsFromStorage(memo.attachments);
-
-    await Memo.deleteOne({ _id: memo._id });
-
-    res.json({ message: "メモを完全に削除しました。" });
-  } catch (err) {
-    console.error("完全削除エラー:", err);
-    res.status(500).json({ message: "完全に削除できませんでした。" });
-  }
-});
-
-module.exports = router;
+router.delete(
+  "/:id/permanent",
+  verifyToken,
+  memoController.permanentDeleteMemo,
+);
