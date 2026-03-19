@@ -71,3 +71,74 @@ exports.createMemo = async (req, res) => {
       .json({ message: "メモの作成中にサーバーエラーが発生しました。" });
   }
 };
+
+// =======================================
+// PUT /api/memos/:id
+// =======================================
+exports.updateMemo=async (req, res) => {
+  try {
+    const { title, content, category, isDone, isPinned, attachments } =
+      req.body;
+
+    const memo = await Memo.findOne({
+      _id: req.params.id,
+      userId: req.user.userId,
+    });
+
+    if (!memo) {
+      return res.status(404).json({ message: "メモが見つかりません" });
+    }
+
+    const updateFields = {};
+
+    if (title !== undefined) updateFields.title = title;
+    if (content !== undefined) updateFields.content = content;
+    if (category !== undefined) updateFields.category = category;
+    if (isDone !== undefined) updateFields.isDone = isDone;
+    if (isPinned !== undefined) updateFields.isPinned = isPinned;
+
+    if (attachments !== undefined) {
+      const oldAttachments = memo.attachments || [];
+      const newAttachments = attachments || [];
+
+      const newPaths = new Set(newAttachments.map((a) => a.path));
+
+      const removedFiles = oldAttachments.filter(
+        (file) => file?.path && !newPaths.has(file.path),
+      );
+
+      updateFields.attachments = newAttachments;
+
+      const updatedMemo = await Memo.findOneAndUpdate(
+        { _id: req.params.id, userId: req.user.userId },
+        updateFields,
+        { new: true },
+      );
+
+      // 孤児ファイル削除（ログ強化済み）
+      await deleteAttachmentsFromStorage(removedFiles);
+
+      return res.json(updatedMemo);
+    }
+
+    if (Object.keys(updateFields).length === 0) {
+      return res.status(400).json({ message: "更新する内容がありません" });
+    }
+
+    const updatedMemo = await Memo.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      updateFields,
+      { new: true },
+    );
+
+    res.json(updatedMemo);
+  } catch (err) {
+    console.error("Memo update failed", {
+      userId: req.user.userId,
+      memoId: req.params.id,
+      error: err.message,
+    });
+
+    res.status(500).json({ message: "サーバーエラー" });
+  }
+};
