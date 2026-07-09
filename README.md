@@ -5,8 +5,8 @@ https://mern-memo-app-client-v2.onrender.com
 ※スマートフォン・PC両方に対応
 
 ## 🔑 テストログイン情報
-Email: t.nakanishi.dev@gmail.com 
-Password: t.nakanishi.dev
+Email:test123@gmail.com　
+Password:test123
 
 ## 📸 スクリーンショット
 ![PC画面（メモ作成画面）](./images/create_memo_v2.png)
